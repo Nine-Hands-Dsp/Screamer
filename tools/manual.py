@@ -15,7 +15,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHOTS, OUT = sys.argv[1], sys.argv[2]
-VERSION = "1.3.0"
+VERSION = "1.3.1"
 TMP = os.path.join(ROOT, "tools", "manual_assets"); os.makedirs(TMP, exist_ok=True)
 FONTS = os.path.join(ROOT, "assets", "fonts")
 for n, f in (("Pop", "Poppins-Regular"), ("PopL", "Poppins-Light"), ("PopM", "Poppins-Medium"), ("PopB", "Poppins-Bold"),
@@ -186,7 +186,7 @@ T = {
  pre=["Use the arrows of the preset bar, click its name, right-click anywhere, or use the preset menu of your DAW. Right-click &gt; <b>Save user preset</b> stores up to 9 presets of your own."],
  fac_hdr=["PC", "Preset", "Drive / Tone / Level (%)", "Description"],
  tips_t="9. Tips",
- tips=["In Reaper place Screamer <b>before</b> your amp simulator (for example before Two Notes Genome), as you would with the real pedal.",
+ tips=["In Reaper place Screamer <b>before</b> your amp simulator (for example before Ampire, the NINE HANDS | DSP amp plugin for NAM captures, followed by Impulse for the cabinet IR), as you would with the real pedal in front of an amp.",
        "The most famous use: <b>Drive low, Level high</b> in front of an amp that is already overdriven (preset <i>Metal Boost</i>). The pedal tightens the low end and pushes the mids, the amp does the distortion. Ideal for a 7-string in G or lower tunings.",
        "In front of a clean amp, raise Drive and keep Level around noon: it is an overdrive, not a distortion; for more gain, stack it into a crunchy amp.",
        "Roll back your guitar's volume knob to clean up the sound: the soft clipping follows it closely."],
@@ -247,7 +247,7 @@ T = {
  pre=["Utilisez les flèches de la barre de presets, cliquez sur son nom, faites un clic droit n'importe où, ou passez par le menu de presets de votre DAW. Clic droit &gt; <b>Save user preset</b> enregistre jusqu'à 9 presets personnels."],
  fac_hdr=["PC", "Preset", "Drive / Tone / Level (%)", "Description"],
  tips_t="9. Conseils d'utilisation",
- tips=["Dans Reaper, placez Screamer <b>avant</b> votre simulateur d'ampli (par exemple avant Two Notes Genome), comme avec la vraie pédale.",
+ tips=["Dans Reaper, placez Screamer <b>avant</b> votre simulateur d'ampli (par exemple avant Ampire, le plugin d'ampli NINE HANDS | DSP pour captures NAM, suivi d'Impulse pour l'IR de baffle), comme avec la vraie pédale devant un ampli.",
        "L'usage le plus célèbre : <b>Drive bas, Level haut</b> devant un ampli déjà saturé (preset <i>Metal Boost</i>). La pédale resserre le grave et pousse les médiums, l'ampli fait la saturation. Idéal pour une 7 cordes en Sol ou des accordages plus bas.",
        "Devant un ampli clair, montez le Drive et gardez le Level vers midi : c'est une overdrive, pas une distorsion ; pour plus de gain, empilez-la avec un ampli crunch.",
        "Baissez le volume de la guitare pour éclaircir le son : l'écrêtage doux le suit de près."],

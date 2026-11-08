@@ -61,11 +61,12 @@ Bright Humbucker · Full Drive · Clean Mid Boost.
 - `ScreamerDSP.h` : moteur audio sans JUCE ; `PluginProcessor.*`, `PluginEditor.*` ; `Layout.h` généré.
 - `tools/make_art.py` (+ `tools/photo_controls.py`) : visuel, calques, `Layout.h`.
 - `tools/render` : compile la vraie fenêtre sous Linux et exporte les captures (`design/renders`).
-- `tools/manual.py` : notice bilingue `docs/Screamer_Manual_EN-FR_v1.2.0.pdf` (repères lus dans `tools/layout.json`).
+- `tools/manual.py` : notice bilingue `docs/Screamer_Manual_EN-FR_v1.3.1.pdf` (repères lus dans `tools/layout.json`).
 - `tests/verify.cpp` : vérification du moteur contre les valeurs publiées (gain de l'étage d'écrêtage modèle / formule, repliement, bypass, fréquences d'échantillonnage, signaux extrêmes).
 
 ## Versions
 
+- **1.3.1** (8 nov. 2026) : notice : conseils d'utilisation avec Ampire et Impulse (Two Notes Genome n'est plus utilisé).
 - **1.3.0** (8 nov. 2026) : le plafond de sécurité à 0 dBFS est retiré : il écrasait le réglage metal (DRIVE 0, LEVEL à fond) dès 0,2 V de guitare ; seul reste l'excursion réelle des amplis op (±3,4 V). Preset 3 « Metal Boost (7 strings) » : DRIVE 0, TONE 13 h, LEVEL à fond. Image 1016 × 1800 aux proportions d'origine de la pédale (1800 px de haut, largeur homogène). Composants vérifiés avec les TS9 d'origine (JRC4558 / TA75558, diodes 1S1588, sortie 470 Ω / 100 k).
 - **1.2.0** (8 nov. 2026) : visuel 965 × 1800 px, pédale plein cadre, transparent seulement autour des jacks ; la fenêtre ne montre plus que la pédale (mêmes hauteurs : 493 / 719 / 958 px, jusqu'à 1437).
 - **1.1.0** (8 nov. 2026) : disposition des potards de la TS9, jacks, écran, presets et LED descendus, titre au milieu ; grand visage imprimé sur la coque ; moteur vérifié (gain 11,9 → 118, conforme à Electrosmash ; 1 kHz à ±0,05 dB de la formule à DRIVE 0) ; coefficients recalculés seulement quand un potard bouge.
