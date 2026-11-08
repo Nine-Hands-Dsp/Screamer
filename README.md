@@ -2,8 +2,9 @@
 
 Overdrive au format pédale simple (référence de format : Echoflex / Doorn / Strong Pickle), reproduction du circuit de
 l'**Ibanez TS9 Tube Screamer**. Usage personnel. Windows 11 et macOS (binaire universel).
-Visuel original NINE HANDS | DSP (boîtier rouge sang de bœuf, pièces photo du kit maison), généré par `tools/make_art.py` ;
-il ne reprend pas l'habillage Ibanez.
+Visuel original NINE HANDS | DSP généré par `tools/make_art.py` : disposition des potards de la TS9 (DRIVE et LEVEL en haut,
+TONE plus petit au milieu), boîtier rouge sang de bœuf imprimé d'un grand visage qui crie (`design/source/portrait.svg`, encre noire,
+sous toutes les commandes et inscriptions, coupé aux bords du boîtier), pièces photo du kit maison ; il ne reprend pas l'habillage Ibanez.
 
 ## Installation via GitHub
 
@@ -59,8 +60,10 @@ Bright Humbucker · Full Drive · Clean Mid Boost.
 - `ScreamerDSP.h` : moteur audio sans JUCE ; `PluginProcessor.*`, `PluginEditor.*` ; `Layout.h` généré.
 - `tools/make_art.py` (+ `tools/photo_controls.py`) : visuel, calques, `Layout.h`.
 - `tools/render` : compile la vraie fenêtre sous Linux et exporte les captures (`design/renders`).
-- `tools/manual.py` : notice bilingue `docs/Screamer_Manual_EN-FR_v1.0.0.pdf`.
+- `tools/manual.py` : notice bilingue `docs/Screamer_Manual_EN-FR_v1.1.0.pdf`.
+- `tests/verify.cpp` : vérification du moteur contre les valeurs publiées (gain de l'étage d'écrêtage modèle / formule, repliement, bypass, fréquences d'échantillonnage, signaux extrêmes).
 
 ## Versions
 
+- **1.1.0** (8 nov. 2026) : disposition des potards de la TS9, jacks, écran, presets et LED descendus, titre au milieu ; grand visage imprimé sur la coque ; moteur vérifié (gain 11,9 → 118, conforme à Electrosmash ; 1 kHz à ±0,05 dB de la formule à DRIVE 0) ; coefficients recalculés seulement quand un potard bouge.
 - **1.0.0** (8 nov. 2026) : première version.

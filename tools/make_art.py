@@ -36,16 +36,17 @@ V = np.array([0.0, 0.0, 1.0]); HV = (L + V) / np.linalg.norm(L + V)
 # ------------------------------------------------------------------ geometrie (unites)
 PX0, PY0, PW, PH, PR = 150.0, 34.0, 460.0, 890.0, 30.0          # boitier (format 125B : 66 x 122 mm environ)
 CX = PX0 + PW / 2
-KNOB_Y, KNOB_R, KNOB_DX = 182.0, 47.0, 140.0
-KNOBS = [(CX - KNOB_DX, KNOB_Y, 'DRIVE'), (CX, KNOB_Y, 'TONE'), (CX + KNOB_DX, KNOB_Y, 'LEVEL')]
-TITLE_Y = 352.0
-SUB_Y = 408.0
-STATUS = (CX - 175.0, 452.0, 350.0, 56.0)       # ecran d'etat (dessine par le plugin)
-PRESET = (CX - 175.0, 520.0, 350.0, 36.0)       # barre de presets (dessinee par le plugin)
-LED = (CX, 668.0)
-FS = (CX, 780.0)
-LOGO_C = (CX, 893.0)
-JACK_Y = PY0 + 0.36 * PH
+# disposition des potards de la TS9 : DRIVE en haut a gauche, LEVEL en haut a droite, TONE plus petit au centre, plus bas
+KNOB_R, TONE_R = 47.0, 37.0
+KNOBS = [(CX - 118.0, 158.0, 'DRIVE', KNOB_R), (CX, 268.0, 'TONE', TONE_R), (CX + 118.0, 158.0, 'LEVEL', KNOB_R)]
+TITLE_Y = 462.0                                   # titre au milieu de la pedale (bloc titre + sous-titre centre sur 479)
+SUB_Y = 514.0
+STATUS = (CX - 175.0, 552.0, 350.0, 56.0)       # ecran d'etat (dessine par le plugin)
+PRESET = (CX - 175.0, 620.0, 350.0, 36.0)       # barre de presets (dessinee par le plugin)
+LED = (CX, 708.0)
+FS = (CX, 804.0)
+LOGO_C = (CX, 896.0)
+JACK_Y = PY0 + 0.62 * PH                         # jacks sous le milieu de la hauteur de la pedale
 
 # ------------------------------------------------------------------ outils
 YY, XX = np.mgrid[0:H, 0:W].astype(np.float32)
@@ -127,11 +128,11 @@ f_lab = ImageFont.truetype(FONT_MED, int(22 * K))
 f_io = ImageFont.truetype(FONT_MED, int(17 * K))
 f_title = ImageFont.truetype(FONT_BOLD, int(54 * K))
 f_sub = ImageFont.truetype(FONT_LIGHT, int(19 * K))
-for (x, y, txt) in KNOBS:
-    spaced(x, y - KNOB_R - 32, txt, f_lab, 3.5)
+for (x, y, txt, KR) in KNOBS:
+    spaced(x, y - KR - 32, txt, f_lab, 3.5)
     for i in range(11):                                   # graduations 0 a 10 sur 300 degres
         a = math.radians(-150 + 30 * i)
-        rr = KNOB_R + 11
+        rr = KR + 11
         px, py = x + rr * math.sin(a), y - rr * math.cos(a)
         dd = 2.2 if i in (0, 5, 10) else 1.4
         dr.ellipse(((px - dd) * K, (py - dd) * K, (px + dd) * K, (py + dd) * K), fill=255)
@@ -158,10 +159,75 @@ spaced_rot(PX0 + 26, JACK_Y, 'OUT', f_io, 2.0)
 spaced_rot(PX0 + PW - 26, JACK_Y, 'IN', f_io, 2.0)
 
 ink = cv2.resize(np.asarray(ink_im, np.float32) / 255.0, (W, H), interpolation=cv2.INTER_AREA)
+
+# ------------------------------------------------------------------ 3b. dessin du visage (design/source/portrait.svg), serigraphie creme
+#     SCREAMER_PORTRAIT="cx,cy,largeur,opacite" (unites) : centre et largeur du dessin lui-meme (pas de son cadre SVG)
+PORTRAIT = os.environ.get('SCREAMER_PORTRAIT', '')
+if PORTRAIT:
+    import subprocess, io
+    pcx, pcy, pw_, pop = [float(v) for v in PORTRAIT.split(',')]
+    BX0, BW_, BY0, BH_ = 0.156, 0.6625, 0.141, 0.72          # boite du dessin dans le cadre carre du SVG
+    full = pw_ / BW_                                          # cote du cadre SVG (unites)
+    npx = int(round(full * AS))
+    png = subprocess.run(['rsvg-convert', '-w', str(npx), '-h', str(npx), os.path.join(ROOT, 'design', 'source', 'portrait.svg')],
+                         capture_output=True, check=True).stdout
+    pr = np.asarray(Image.open(io.BytesIO(png)).convert('RGBA')).astype(np.float32) / 255.0
+    pm = pr[..., 3] * (1.0 - pr[..., :3].mean(-1))           # seuls les traits sombres deviennent de l'encre
+    if os.environ.get('SCREAMER_FEATURES'):
+        # seulement les yeux, le nez et la bouche (ellipses aux bords adoucis, coordonnees du cadre SVG / 800)
+        vv, uu = np.mgrid[0:npx, 0:npx].astype(np.float32) * (800.0 / npx)
+        keep = np.zeros_like(pm)
+        for (ex_, ey_, rx_, ry_) in ((326.5, 381.5, 48.0, 26.0), (475.0, 381.5, 46.0, 26.0),      # yeux
+                                     (402.5, 464.0, 50.0, 24.0),                                  # nez
+                                     (402.5, 560.0, 66.0, 52.0)):                                 # bouche
+            d_ = np.sqrt(((uu - ex_) / rx_) ** 2 + ((vv - ey_) / ry_) ** 2)
+            keep = np.maximum(keep, np.clip((1.0 - d_) / 0.15, 0, 1))
+        pm = pm * keep
+    x0p = int(round((pcx - full * (BX0 + BW_ / 2)) * AS)); y0p = int(round((pcy - full * (BY0 + BH_ / 2)) * AS))
+    lay = np.zeros((H, W), np.float32)
+    sx0, sy0 = max(0, -x0p), max(0, -y0p); ex, ey = min(npx, W - x0p), min(npx, H - y0p)
+    lay[y0p + sy0:y0p + ey, x0p + sx0:x0p + ex] = pm[sy0:ey, sx0:ex]
+    ink = np.maximum(ink, lay * pop)
 wear = cv2.GaussianBlur((fbm((H, W), [1, 3], [1.0, 0.6], 21) > 2.5).astype(np.float32), (0, 0), 0.5)
 ink = ink * (1 - wear * 0.45) * body
 light = 1.0 + 0.05 * np.clip(1 - (UX - PX0) / PW * 0.6 - (UY - PY0) / PH * 0.6, -1, 1)
 ink_col = np.array([236.0, 226.0, 204.0]) * light[..., None]          # creme
+# ------------------------------------------------------------------ 3c. grand visage imprime sur la coque (design/source/portrait.svg), encre noire
+#     SCREAMER_ART="x,y,cote,opacite" (unites) : position de l'oeil droit du visage (oeil de gauche dans le dessin)
+#     et cote du cadre carre du SVG. Le dessin reste sur le boitier (coupe a ses bords) et passe SOUS tous les elements :
+#     serigraphie, logo, potards, LED, footswitch (reserves autour d'eux), ecran et barre dessines par le plugin.
+ART = os.environ.get('SCREAMER_ART', '439,341,1980,0.95')    # v1.1.0 : visage valide (oeil sous TONE, bouche en bas a droite)
+if ART:
+    import subprocess, io
+    ax_, ay_, full, aop = [float(v) for v in ART.split(',')]
+    npx = int(round(full * AS))
+    png = subprocess.run(['rsvg-convert', '-w', str(npx), '-h', str(npx), os.path.join(ROOT, 'design', 'source', 'portrait.svg')],
+                         capture_output=True, check=True).stdout
+    pr = np.asarray(Image.open(io.BytesIO(png)).convert('RGBA')).astype(np.float32) / 255.0
+    pm = pr[..., 3] * (1.0 - pr[..., :3].mean(-1))           # seuls les traits sombres deviennent de l'encre
+    x0p = int(round((ax_ - full * 326.5 / 800.0) * AS)); y0p = int(round((ay_ - full * 381.5 / 800.0) * AS))
+    lay = np.zeros((H, W), np.float32)
+    sx0, sy0 = max(0, -x0p), max(0, -y0p); ex, ey = min(npx, W - x0p), min(npx, H - y0p)
+    if ex > sx0 and ey > sy0:
+        lay[y0p + sy0:y0p + ey, x0p + sx0:x0p + ex] = pm[sy0:ey, sx0:ex]
+    # reserves : serigraphie et logo (marge ~3 unites), potards, LED, footswitch
+    keep_out = (ink > 0.05).astype(np.uint8)
+    _lg = np.asarray(Image.open(os.path.join(ROOT, 'assets', 'nine_hands_logo_blanc.png')).convert('RGBA'))[..., 3]
+    _lw = int(196.0 * AS); _lh = int(round(_lw * _lg.shape[0] / _lg.shape[1]))
+    _la = cv2.resize(_lg, (_lw, _lh), interpolation=cv2.INTER_AREA) > 20
+    _x0, _y0 = int(LOGO_C[0] * AS - _lw / 2), int(LOGO_C[1] * AS - _lh / 2)
+    keep_out[_y0:_y0 + _lh, _x0:_x0 + _lw] |= _la.astype(np.uint8)
+    keep_out = cv2.dilate(keep_out, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (int(6 * AS) | 1, int(6 * AS) | 1))).astype(np.float32)
+    for (x, y, _, KR) in KNOBS:
+        keep_out = np.maximum(keep_out, (np.hypot(UX - x, UY - y) < KR + 5).astype(np.float32))
+    keep_out = np.maximum(keep_out, (np.hypot(UX - LED[0], UY - LED[1]) < 19).astype(np.float32))
+    keep_out = np.maximum(keep_out, (np.hypot(UX - FS[0], UY - FS[1]) < 64).astype(np.float32))
+    keep_out = cv2.GaussianBlur(keep_out, (0, 0), 1.2 * AS)
+    # coupe au boitier, un peu en retrait de l'arete arrondie (le dessin est imprime sur le dessus)
+    on_top = np.clip((-sd - 6.0) / 2.0, 0, 1)
+    art_a = np.clip(lay * aop, 0, 1) * (1 - np.clip(keep_out * 1.6, 0, 1)) * on_top
+    art_col = np.array([16.0, 8.0, 9.0]) + 10.0 * (light[..., None] - 1.0) * 10       # encre noire, a peine plus claire dans la lumiere
+    img = img * (1 - art_a[..., None]) + art_col * art_a[..., None]
 img = img * (1 - ink[..., None]) + ink_col * ink[..., None]
 
 # ------------------------------------------------------------------ 4. logo NINE HANDS | DSP (blanc), en bas au centre
@@ -178,8 +244,8 @@ img += (fbm((H, W), [1], [0.9], 22) * body)[..., None]          # le grain de la
 
 # ------------------------------------------------------------------ 5. potards (photo du kit, repere efface : seul le repere du plugin tourne)
 print('potards, LED, footswitch...')
-KN, KS = PC.knob_sprite(KNOB_R, AS)
-for (x, y, _) in KNOBS:
+for (x, y, _, KR) in KNOBS:
+    KN, KS = PC.knob_sprite(KR, AS)
     over(img, KN, (x - KS / 2) * AS, (y - KS / 2) * AS)
 
 # LED rouge (photo du kit, couleur d'origine)
@@ -243,7 +309,7 @@ with open(os.path.join(ROOT, 'Layout.h'), 'w') as fo:
     fo.write(f"// genere par tools/make_art.py - ne pas modifier a la main (repere {UW} x {UH}, fond 2x)\n#pragma once\n#include <juce_graphics/juce_graphics.h>\nnamespace layout\n{{\n")
     fo.write("    // ordre : drive, tone, level\n")
     fo.write("    const juce::Point<float> knobPos[3] = { " + ", ".join(PT(k[:2]) for k in KNOBS) + " };\n")
-    fo.write(f"    const float knobR = {f(KNOB_R)};\n")
+    fo.write("    const float knobR[3] = { " + ", ".join(f(k[3]) for k in KNOBS) + " };\n")
     fo.write(f"    const juce::Point<float> ledPos {PT(LED)}; const float ledS = {f(LS)};\n")
     fo.write(f"    const juce::Rectangle<float> glowRect {RC(GLR)};\n")
     fo.write(f"    const juce::Point<float> fsPos {PT(FS)}; const float footR = {f(FS_BTN)}, fsS = {f(FS_W)};   // bouton / sprite\n")

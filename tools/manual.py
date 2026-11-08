@@ -15,7 +15,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHOTS, OUT = sys.argv[1], sys.argv[2]
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 TMP = os.path.join(ROOT, "tools", "manual_assets"); os.makedirs(TMP, exist_ok=True)
 FONTS = os.path.join(ROOT, "assets", "fonts")
 for n, f in (("Pop", "Poppins-Regular"), ("PopL", "Poppins-Light"), ("PopM", "Poppins-Medium"), ("PopB", "Poppins-Bold"),
@@ -26,17 +26,17 @@ ACC = colors.HexColor("#B3202A"); ACC_L = colors.HexColor("#FF6A55")        # ro
 DARK = colors.HexColor("#211617"); GREY = colors.HexColor("#6A5E5F"); LIGHT = colors.HexColor("#F6ECEA")
 
 # reperes (repere 760 x 958, Layout.h)
-KNOBS = [(240, 182), (380, 182), (520, 182)]
-LED, FS, JACK_Y = (380, 668), (380, 780), 354.4
-STATUS, PRESET = (205, 452, 350, 56), (205, 520, 350, 36)
+KNOBS = [(262, 158), (380, 268), (498, 158)]          # drive, tone, level (disposition TS9)
+LED, FS, JACK_Y = (380, 708), (380, 804), 585.8
+STATUS, PRESET = (205, 552, 350, 56), (205, 620, 350, 36)
 
 def shot(name): return Image.open(os.path.join(SHOTS, name)).convert("RGB")
 src = shot("screamer_status.png")
 k = src.height / 958.0
 
 # ---------- capture annotee ----------
-marks = [(1, KNOBS[0][0] - 58, KNOBS[0][1] - 62), (2, KNOBS[1][0] + 46, KNOBS[1][1] - 92), (3, KNOBS[2][0] + 58, KNOBS[2][1] - 62),
-         (4, STATUS[0] - 22, STATUS[1] + 28), (5, PRESET[0] - 22, PRESET[1] + 18), (6, LED[0] + 34, LED[1]),
+marks = [(1, KNOBS[0][0] - 62, KNOBS[0][1] - 58), (2, KNOBS[1][0] + 62, KNOBS[1][1] + 20), (3, KNOBS[2][0] + 62, KNOBS[2][1] - 58),
+         (4, STATUS[0] + 8, STATUS[1] - 14), (5, PRESET[0] - 22, PRESET[1] + 18), (6, LED[0] + 34, LED[1]),
          (7, FS[0] + 80, FS[1]), (8, 100, JACK_Y - 70), (9, 660, JACK_Y - 70)]
 ann = src.copy(); dr = ImageDraw.Draw(ann)
 fnt = ImageFont.truetype(os.path.join(FONTS, "Poppins-Bold.ttf"), 34)
@@ -52,9 +52,9 @@ def strip(parts, path, gap=18):
     x = 0
     for p in parts: s.paste(p, (x, 0)); x += p.width + gap
     s.save(path); return path
-box_on = (270, 600, 490, 870)
+box_on = (270, 668, 490, 880)
 on_img = strip([crop_u(shot("screamer_bypass.png"), box_on), crop_u(src, box_on)], os.path.join(TMP, "screamer_onoff.png"))
-bar_img = os.path.join(TMP, "screamer_bar.png"); crop_u(src, (190, 440, 570, 566)).save(bar_img)
+bar_img = os.path.join(TMP, "screamer_bar.png"); crop_u(src, (190, 540, 570, 666)).save(bar_img)
 
 # ---------- couverture : pedale detouree (boitier rouge + jacks), reflet au sol, halo rouge tres doux ----------
 a = np.asarray(src).astype(np.float32)
@@ -168,7 +168,7 @@ T = {
  intro=["<b>SCREAMER</b> is a NINE HANDS | DSP plugin modelled on the <b>Ibanez TS9 Tube Screamer</b> (1982), the green overdrive that, with its TS808 sibling, defined the mid-forward \"Tube Screamer\" sound: a warm, smooth overdrive with a hump in the mids and a tight low end, loved for pushing amps from blues to metal.",
         "The circuit is modelled <b>stage by stage</b> with the values of the original: the input buffer, the clipping stage built around the first half of the JRC4558 op-amp, the tone stage built around the second half, the Level pot and the TS9 output buffer. The clipping stage is solved at every sample (trapezoidal integration and Newton's method on the Shockley equation of the two 1S1588 diodes), at 4x oversampling. Nothing is added on top: the mid hump, the soft clipping and the way the pedal cleans up come from the components themselves.",
         "Why it sounds like that: in the clipping stage, only the frequencies above about <b>720 Hz</b> (4.7 k + 47 nF to ground) are amplified; the low end goes through at unity gain, clean. The two diodes sit in the op-amp's feedback loop, so the output is the clean signal <i>plus</i> the softly clipped mids: a smooth, \"tube-like\" overdrive that keeps your picking dynamics. A 723 Hz low-pass (1 k + 220 nF) then softens the top, and the active tone stage brings back as much treble as you want.",
-        "The visual is an original NINE HANDS | DSP design; Screamer is not affiliated with Ibanez, and \"Tube Screamer\" and \"TS9\" are only used to describe the circuit it models."],
+        "The visual is an original NINE HANDS | DSP design: the knob layout of the TS9 (Drive and Level on top, a smaller Tone in the middle) on an oxblood enclosure printed with a large screaming face, which runs under all the controls and lettering; Screamer is not affiliated with Ibanez, and \"Tube Screamer\" and \"TS9\" are only used to describe the circuit it models."],
  inst_t="2. Installation",
  inst=[("Windows", "Download the <b>Screamer-VST3-Windows</b> artifact from the Actions tab of the GitHub repository Nine-Hands-Dsp/Screamer, unzip it and copy the <b>Screamer.vst3</b> folder into <b>C:\\Program Files\\Common Files\\VST3</b>."),
        ("macOS", "Download <b>Screamer-VST3-macOS</b>, unzip it and copy <b>Screamer.vst3</b> into <b>~/Library/Audio/Plug-Ins/VST3</b>. If macOS blocks it, run <b>xattr -cr ~/Library/Audio/Plug-Ins/VST3/Screamer.vst3</b> in the Terminal. The binary is universal (Apple Silicon and Intel)."),
@@ -229,7 +229,7 @@ T = {
  intro=["<b>SCREAMER</b> est un plugin NINE HANDS | DSP inspiré de l'<b>Ibanez TS9 Tube Screamer</b> (1982), l'overdrive verte qui a défini, avec sa sœur la TS808, le son « Tube Screamer » : une saturation chaude et douce, médiums en avant et grave serré, utilisée pour pousser les amplis du blues au metal.",
         "Le circuit est reproduit <b>étage par étage</b> avec les valeurs de l'original : tampon d'entrée, étage d'écrêtage autour de la première moitié de l'ampli op JRC4558, étage de tonalité autour de la seconde moitié, potentiomètre Level et tampon de sortie de la TS9. L'étage d'écrêtage est résolu à chaque échantillon (intégration par la méthode des trapèzes et méthode de Newton sur l'équation de Shockley des deux diodes 1S1588), en sur-échantillonnage x4. Rien n'est ajouté par-dessus : la bosse de médiums, l'écrêtage doux et la façon dont la pédale s'éclaircit viennent des composants eux-mêmes.",
         "Pourquoi ce son : dans l'étage d'écrêtage, seules les fréquences au-dessus d'environ <b>720 Hz</b> (4,7 k + 47 nF vers la masse) sont amplifiées ; le grave passe avec un gain de 1, propre. Les deux diodes sont dans la boucle de contre-réaction de l'ampli op : la sortie est le signal propre <i>plus</i> les médiums écrêtés en douceur, une saturation « à lampes » qui garde la dynamique du jeu. Un passe-bas à 723 Hz (1 k + 220 nF) adoucit ensuite l'aigu, et l'étage de tonalité actif rend autant d'aigu que vous voulez.",
-        "Le visuel est un design original NINE HANDS | DSP ; Screamer n'est pas affilié à Ibanez, et « Tube Screamer » et « TS9 » ne servent qu'à décrire le circuit reproduit."],
+        "Le visuel est un design original NINE HANDS | DSP : la disposition des potards de la TS9 (Drive et Level en haut, Tone plus petit au milieu) sur un boîtier rouge sang de bœuf imprimé d'un grand visage qui crie, passant sous toutes les commandes et inscriptions ; Screamer n'est pas affilié à Ibanez, et « Tube Screamer » et « TS9 » ne servent qu'à décrire le circuit reproduit."],
  inst_t="2. Installation",
  inst=[("Windows", "Téléchargez l'artefact <b>Screamer-VST3-Windows</b> dans l'onglet Actions du dépôt GitHub Nine-Hands-Dsp/Screamer, décompressez-le et copiez le dossier <b>Screamer.vst3</b> dans <b>C:\\Program Files\\Common Files\\VST3</b>."),
        ("macOS", "Téléchargez <b>Screamer-VST3-macOS</b>, décompressez-le et copiez <b>Screamer.vst3</b> dans <b>~/Bibliothèque/Audio/Plug-Ins/VST3</b>. Si macOS le bloque, tapez <b>xattr -cr ~/Library/Audio/Plug-Ins/VST3/Screamer.vst3</b> dans le Terminal. Le binaire est universel (Apple Silicon et Intel)."),

@@ -446,6 +446,7 @@ namespace screamer
                 sDrive.reset (p.drive); sTone.reset (p.tone); sLevel.reset (p.level);
                 sActive.reset (p.active ? 1.0f : 0.0f);
                 for (auto& c : ch) { c.setDrive (p.drive / 10.0); c.setTone (p.tone / 10.0); }
+                appliedDrive = p.drive; appliedTone = p.tone;
                 first = false;
             }
 
@@ -455,8 +456,12 @@ namespace screamer
                 const float tn  = sTone.next (p.tone);
                 const float lv  = sLevel.next (p.level);
                 const float act = sActive.next (p.active ? 1.0f : 0.0f);
-                if ((counter++ & 7) == 0)
+                // circuit mis a jour toutes les 8 echantillons, seulement si un potard bouge (economie de CPU au repos)
+                if ((counter++ & 7) == 0 && (std::abs (dr - appliedDrive) > 1.0e-5f || std::abs (tn - appliedTone) > 1.0e-5f))
+                {
+                    appliedDrive = dr; appliedTone = tn;
                     for (int c = 0; c < nCh; ++c) { ch[c].setDrive (dr / 10.0); ch[c].setTone (tn / 10.0); }
+                }
 
                 const float out = levelGain (lv) * outTrim;
 
@@ -515,5 +520,6 @@ namespace screamer
         Smooth2 sDrive, sTone, sLevel, sActive;
         bool first = true;
         unsigned counter = 0;
+        float appliedDrive = -1.0f, appliedTone = -1.0f;
     };
 }

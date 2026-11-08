@@ -218,7 +218,7 @@ void ScreamerAudioProcessorEditor::resized()
     // anti-gel : jamais de setSize ici ; les limites du constrainer suffisent
     for (int i = 0; i < ScreamerAudioProcessor::numKnobs; ++i)
     {
-        const auto c = layout::knobPos[i]; const float r = layout::knobR;
+        const auto c = layout::knobPos[i]; const float r = layout::knobR[i];
         knobs[i].setBounds (scaled ({ c.x - r, c.y - r, r * 2.0f, r * 2.0f }));
     }
     const float fr = layout::fsS * 0.5f;
