@@ -16,6 +16,7 @@ int main (int argc, char** argv)
     auto shot = [&] (const String& name, int preset, bool active, bool status, int height)
     {
         sed->setScaledHeight (height);
+        sed->forceRenderScale (2.0f);
         proc.applyFactoryPreset (preset);
         proc.setParamValue ("active", active ? 1.f : 0.f);
         AudioBuffer<float> b (2, 256); MidiBuffer m;
@@ -33,6 +34,21 @@ int main (int argc, char** argv)
     shot ("screamer_status",  0, true,  true,  ScreamerAudioProcessorEditor::refH);
     shot ("screamer_bypass",  2, false, false, ScreamerAudioProcessorEditor::refH);
     shot ("screamer_full",    8, true,  false, ScreamerAudioProcessorEditor::refH);
+
+    // rendu exact de la pedale seule, en action (effet actif, LED allumee, preset 1) : fenetre de 900 px de haut capturee en 2x
+    {
+        sed->setScaledHeight (900);
+        sed->forceRenderScale (2.0f);
+        proc.applyFactoryPreset (0);
+        proc.setParamValue ("active", 1.f);
+        AudioBuffer<float> b (2, 256); MidiBuffer m;
+        for (int i = 0; i < 20; ++i) { b.clear(); proc.processBlock (b, m); }
+        pump (140);
+        auto img = ed->createComponentSnapshot (ed->getLocalBounds(), true, 1800.0f / (float) ed->getHeight());
+        File f (out + "/screamer_exact.png"); f.deleteFile();
+        FileOutputStream os (f); PNGImageFormat().writeImageToStream (img, os);
+        std::printf ("%s (%d x %d)\n", f.getFullPathName().toRawUTF8(), img.getWidth(), img.getHeight());
+    }
 
     // test pedale d'expression : course 2..116 sur CC 21 (drive)
     {

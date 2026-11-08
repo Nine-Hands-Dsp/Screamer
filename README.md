@@ -36,13 +36,14 @@ forums Seymour Duncan / PedalPCB pour les différences TS9 / TS808 (sortie 470 �
 
 ## Interface
 
-- **Visuel 1016 × 1800 px** (`background.png`, 1800 px de haut, largeur aux proportions de la pédale) : la pédale plein cadre, fond transparent seulement autour des jacks (règle des pédales simples NINE HANDS | DSP) ; la fenêtre montre la pédale seule.
-- Fenêtre ouverte à **493 px de haut** (278 × 493), impossible de la réduire en dessous, proportions bloquées, jusqu'à 150 %. Clic droit > *Plugin size* : 60 % / 75 % / 100 % ; *Default size (new windows)* pour la taille des nouvelles fenêtres.
+- **Visuel 1235 × 1800 px** (`background.png`) : la pédale plein cadre, fond transparent seulement autour des jacks (règle des pédales simples NINE HANDS | DSP) ; la fenêtre montre la pédale seule.
+- **Sérigraphie vectorielle** : noms des potards, SCREAMER / OVERDRIVE, IN / OUT, graduations et logo NINE HANDS | DSP (`NineHandsLogo.svg`) sont dessinés par le plugin (Poppins), nets à toutes les tailles et sur les écrans haute densité ; le fond est mis en cache à la résolution physique de l'écran.
+- Fenêtre ouverte à **493 px de haut** (338 × 493), impossible de la réduire en dessous, proportions bloquées, jusqu'à 150 %. Clic droit > *Plugin size* : 60 % / 75 % / 100 % ; *Default size (new windows)* pour la taille des nouvelles fenêtres.
 - **Écran d'état** (réglage en %, messages MIDI Learn) et **barre de presets** (flèches, menu) dessinés par le plugin, police Poppins.
-- Potards : photo du kit (`assets/kit/knob_photo.png`), seul le repère crème tourne ; double-clic = midi.
+- Potards agrandis (v1.3.2) : photo du kit (`assets/kit/knob_photo.png`), seul le repère crème tourne ; double-clic = midi.
 - Footswitch du kit (référence Echoflex) : bascule à l'appui, bouton assombri tant qu'on appuie, reflet rouge de la LED sur l'écrou.
 - LED rouge (photo du kit, couleur d'origine), façade éclairée par un calque précalculé, fondu 0,45 / 0,28.
-- Jacks photo du kit sur les tranches (OUT à gauche, IN à droite), inscriptions IN / OUT à leur hauteur.
+- Jacks photo du kit affleurant les tranches (OUT à gauche, IN à droite), inscriptions IN / OUT à leur hauteur ; occlusion sur la coque autour des jacks, des potards, de la LED et du footswitch.
 - **Anti-gel v2** : rendu logiciel forcé sous Windows, fenêtre opaque, timer 30 Hz qui ne redessine que ce qui change, caches reconstruits par le timer, chien de garde 1,5 s, jamais de `setSize` dans `resized()` ; côté audio, file vidée sur le thread de messages, paramètres lus par pointeurs. JUCE 8.0.15.
 
 ## MIDI
@@ -61,11 +62,12 @@ Bright Humbucker · Full Drive · Clean Mid Boost.
 - `ScreamerDSP.h` : moteur audio sans JUCE ; `PluginProcessor.*`, `PluginEditor.*` ; `Layout.h` généré.
 - `tools/make_art.py` (+ `tools/photo_controls.py`) : visuel, calques, `Layout.h`.
 - `tools/render` : compile la vraie fenêtre sous Linux et exporte les captures (`design/renders`).
-- `tools/manual.py` : notice bilingue `docs/Screamer_Manual_EN-FR_v1.3.1.pdf` (repères lus dans `tools/layout.json`).
+- `tools/manual.py` : notice bilingue `docs/Screamer_Manual_EN-FR_v1.3.2.pdf` (repères lus dans `tools/layout.json`).
 - `tests/verify.cpp` : vérification du moteur contre les valeurs publiées (gain de l'étage d'écrêtage modèle / formule, repliement, bypass, fréquences d'échantillonnage, signaux extrêmes).
 
 ## Versions
 
+- **1.3.2** (9 nov. 2026) : visuel 1235 × 1800 ; potards agrandis ; textes, graduations (toutes de même taille) et nouveau logo NINE HANDS | DSP dessinés en vectoriel ; fond net sur écrans haute densité ; traits du visage lissés ; jacks affleurant le boîtier ; occlusion autour des éléments en relief.
 - **1.3.1** (8 nov. 2026) : notice : conseils d'utilisation avec Ampire et Impulse (Two Notes Genome n'est plus utilisé).
 - **1.3.0** (8 nov. 2026) : le plafond de sécurité à 0 dBFS est retiré : il écrasait le réglage metal (DRIVE 0, LEVEL à fond) dès 0,2 V de guitare ; seul reste l'excursion réelle des amplis op (±3,4 V). Preset 3 « Metal Boost (7 strings) » : DRIVE 0, TONE 13 h, LEVEL à fond. Image 1016 × 1800 aux proportions d'origine de la pédale (1800 px de haut, largeur homogène). Composants vérifiés avec les TS9 d'origine (JRC4558 / TA75558, diodes 1S1588, sortie 470 Ω / 100 k).
 - **1.2.0** (8 nov. 2026) : visuel 965 × 1800 px, pédale plein cadre, transparent seulement autour des jacks ; la fenêtre ne montre plus que la pédale (mêmes hauteurs : 493 / 719 / 958 px, jusqu'à 1437).

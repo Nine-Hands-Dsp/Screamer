@@ -70,6 +70,7 @@ public:
     static constexpr int maxH = refH * 3 / 2;
 
     void setScaledHeight (int h);
+    void forceRenderScale (float sc) { forcedScale = sc; rebuildCaches (sc); }   // captures (outil de rendu) : caches a l'echelle de la capture
     static constexpr int numSizes = 3;          // 60 % (defaut d'origine) / 75 % / 100 %
     static int sizeHeight (int idx);
     void showStatus();
@@ -88,6 +89,8 @@ private:
     juce::Rectangle<int> scaled (juce::Rectangle<float> r) const;
     juce::String buildStatusLine() const;
     juce::String buildPresetLine() const;
+    void drawPrint (juce::Graphics&);   // serigraphie vectorielle (textes, graduations, filets, logo)
+    void buildPrint();
     void drawLed (juce::Graphics&);
     void drawStatus (juce::Graphics&);
     void drawPresetBar (juce::Graphics&);
@@ -98,12 +101,14 @@ private:
 
     juce::Image background, bgScaled, glow, glowS, ledOn;
     int cacheW = 0, cacheH = 0;
-    float cacheScale = 0.0f;
+    float cacheScale = 0.0f, forcedScale = 0.0f;
     int resizeSettle = 0;
     // anti-gel v2 : suivi de la fenetre hote, de l'echelle et des redessins
     void* lastPeer = nullptr;
     double lastPaintMs = 0.0, repaintAskedMs = 0.0, lastScaleCheckMs = 0.0, lastRendererCheckMs = 0.0;
-    juce::Typeface::Ptr labelFace;
+    juce::Typeface::Ptr labelFace, boldFace, lightFace;
+    juce::Path printPath;                  // textes + graduations + filets, en unites du plugin
+    std::unique_ptr<juce::Drawable> logo;
 
     ScreamerKnob knobs[ScreamerAudioProcessor::numKnobs];
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> knobAtt[ScreamerAudioProcessor::numKnobs];

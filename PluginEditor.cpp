@@ -114,6 +114,11 @@ ScreamerAudioProcessorEditor::ScreamerAudioProcessorEditor (ScreamerAudioProcess
     ledOn      = ImageCache::getFromMemory (BinaryData::led_on_png, BinaryData::led_on_pngSize);
     footswitch.reflection = ImageCache::getFromMemory (BinaryData::fs_refl_png, BinaryData::fs_refl_pngSize);
     labelFace = Typeface::createSystemTypefaceFor (BinaryData::PoppinsMedium_ttf, BinaryData::PoppinsMedium_ttfSize);
+    boldFace  = Typeface::createSystemTypefaceFor (BinaryData::PoppinsBold_ttf, BinaryData::PoppinsBold_ttfSize);
+    lightFace = Typeface::createSystemTypefaceFor (BinaryData::PoppinsLight_ttf, BinaryData::PoppinsLight_ttfSize);
+    if (auto xml = XmlDocument::parse (String::fromUTF8 (BinaryData::NineHandsLogo_svg, BinaryData::NineHandsLogo_svgSize)))
+        logo = Drawable::createFromSVG (*xml);
+    buildPrint();
 
     // index des commandes = learnDef du processeur (0-2 potards, 3 footswitch)
     rightClickFwd.callback = [this] (Component* c)
@@ -190,6 +195,7 @@ Rectangle<int> ScreamerAudioProcessorEditor::scaled (Rectangle<float> r) const
 
 float ScreamerAudioProcessorEditor::physicalScale() const
 {
+    if (forcedScale > 0.0f) return forcedScale;
     return jlimit (1.0f, 4.0f, (float) Component::getApproximateScaleFactorForComponent (this));
 }
 
@@ -421,6 +427,49 @@ void ScreamerAudioProcessorEditor::drawPresetBar (Graphics& g)
     g.drawFittedText (lastPreset, r.reduced (aw, 0.0f).toNearestInt(), Justification::centred, 1, 0.7f);
 }
 
+//==============================================================================
+// Serigraphie vectorielle : construite une fois en chemins (unites du plugin), remplie a l'echelle de la fenetre
+//==============================================================================
+void ScreamerAudioProcessorEditor::buildPrint()
+{
+    printPath.clear();
+    for (const auto& t : layout::texts)
+    {
+        const Typeface::Ptr face = t.font == 1 ? boldFace : (t.font == 2 ? lightFace : labelFace);
+        const Font font (FontOptions (face).withPointHeight (t.em));
+        const String s (t.s);
+        float total = 0.0f;
+        for (int i = 0; i < s.length(); ++i)
+            total += GlyphArrangement::getStringWidth (font, String::charToString (s[i])) + (i > 0 ? t.track : 0.0f);
+        const float base = (font.getAscent() - font.getDescent()) * 0.5f;     // centre vertical entre ascendante et descendante
+        GlyphArrangement ga;
+        float x = -total * 0.5f;
+        for (int i = 0; i < s.length(); ++i)
+        {
+            const String ch = String::charToString (s[i]);
+            ga.addLineOfText (font, ch, x, base);
+            x += GlyphArrangement::getStringWidth (font, ch) + t.track;
+        }
+        Path p; ga.createPath (p);
+        p.applyTransform (AffineTransform::rotation (-t.rot * MathConstants<float>::pi / 180.0f).translated (t.x, t.y));
+        printPath.addPath (p);
+    }
+    for (const auto& d : layout::dots)  printPath.addEllipse (d.x - d.r, d.y - d.r, d.r * 2.0f, d.r * 2.0f);
+    for (const auto& r : layout::rules) printPath.addRectangle (r);
+}
+
+void ScreamerAudioProcessorEditor::drawPrint (Graphics& g)
+{
+    g.setColour (inkCream);
+    g.fillPath (printPath);
+    if (logo != nullptr)
+    {
+        const auto vb = logo->getDrawableBounds();
+        const float w = layout::logoW, h = w * vb.getHeight() / jmax (1.0f, vb.getWidth());
+        logo->drawWithin (g, { layout::logoPos.x - w * 0.5f, layout::logoPos.y - h * 0.5f, w, h }, RectanglePlacement::centred, 0.92f);
+    }
+}
+
 void ScreamerAudioProcessorEditor::paint (Graphics& g)
 {
     lastPaintMs = Time::getMillisecondCounterHiRes();
@@ -434,6 +483,7 @@ void ScreamerAudioProcessorEditor::paint (Graphics& g)
     const float s = (float) getHeight() / baseH;
     g.addTransform (AffineTransform::scale (s));
     g.setImageResamplingQuality (Graphics::mediumResamplingQuality);
+    drawPrint (g);
     drawLed (g);
     drawStatus (g);
     drawPresetBar (g);

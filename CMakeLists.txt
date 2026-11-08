@@ -6,7 +6,7 @@ if(APPLE)
   set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "" FORCE)
 endif()
 
-project(Screamer VERSION 1.3.1)
+project(Screamer VERSION 1.3.2)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -28,7 +28,7 @@ endif()
 
 # visuel integre au plugin (aucun fichier externe a l'execution)
 juce_add_binary_data(ScreamerAssets SOURCES
-  background.png glow_red.png led_on.png fs_refl.png Poppins-Medium.ttf)
+  background.png glow_red.png led_on.png fs_refl.png Poppins-Medium.ttf Poppins-Bold.ttf Poppins-Light.ttf NineHandsLogo.svg)
 set_target_properties(ScreamerAssets PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 juce_add_plugin(Screamer
@@ -39,7 +39,7 @@ juce_add_plugin(Screamer
   FORMATS VST3
   VST3_CATEGORIES Fx Distortion
   PRODUCT_NAME "Screamer"
-  VERSION 1.3.1
+  VERSION 1.3.2
   DESCRIPTION "Overdrive (Ibanez TS9 Tube Screamer circuit model) - single pedal format"
   IS_SYNTH FALSE
   NEEDS_MIDI_INPUT TRUE

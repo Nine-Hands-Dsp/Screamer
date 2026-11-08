@@ -20,7 +20,7 @@ Sorties (racine du depot) :
   design/preview.png  apercu (LED allumee)
 Usage : python3 tools/make_art.py
 """
-import os, sys, math
+import os, sys, math, subprocess, io
 import numpy as np, cv2
 from PIL import Image, ImageDraw, ImageFont
 
@@ -37,32 +37,53 @@ L = np.array([-0.46, -0.62, 0.64]); L /= np.linalg.norm(L)        # vers la lumi
 V = np.array([0.0, 0.0, 1.0]); HV = (L + V) / np.linalg.norm(L + V)
 
 # ------------------------------------------------------------------ geometrie (unites)
-OUT_H = 1800                                     # image finale : 1800 px de haut (regle des pedales simples)
+OUT_H = 1800                                     # image finale : 1800 px de haut
 JACK_LEN = 104.0                                 # longueur de l'embase le long de la tranche
 _jtest = PC.jack_sprite(JACK_LEN, AS, 1)
 JACK_PROT = _jtest[1] - 1.5 / AS                 # saillie de l'embase hors du boitier (unites)
 PY0, PH, PR = 34.0, 890.0, 30.0
-PW = 460.0                                       # largeur du boitier : proportions d'origine de la pedale (66 x 122 mm environ)
-OUT_W = int(round((PW + 2 * JACK_PROT) * OUT_H / PH))   # largeur de l'image : meme echelle que la hauteur (proportions homogenes)
+OUT_W = 1235                                     # image finale 1235 x 1800 (demande de l'utilisateur, nov. 2026)
+PW = OUT_W / OUT_H * PH - 2 * JACK_PROT          # boitier + jacks = largeur de l'image, a la meme echelle que la hauteur (rien n'est etire)
 PX0 = (UW - PW) / 2
 CX = PX0 + PW / 2
 CROP_X0, CROP_W = PX0 - JACK_PROT, PW + 2 * JACK_PROT     # cadre final (unites de travail)
 SC = (OUT_H / 2.0) / PH                          # unites de travail -> unites du plugin (965 x 1800 / 2)
 # disposition des potards de la TS9 : DRIVE en haut a gauche, LEVEL en haut a droite, TONE plus petit au centre, plus bas
-KNOB_R, TONE_R = 47.0, 37.0
-KNOBS = [(CX - 118.0, 158.0, 'DRIVE', KNOB_R), (CX, 268.0, 'TONE', TONE_R), (CX + 118.0, 158.0, 'LEVEL', KNOB_R)]
+KNOB_R, TONE_R = 60.0, 47.0                      # potards agrandis (+27 %, nov. 2026)
+KX = PW / 460.0                                  # largeur du boitier / boitier de reference (460) : ecarts horizontaux a l'echelle
+KNOBS = [(CX - 122.0 * KX, 172.0, 'DRIVE', KNOB_R), (CX, 296.0, 'TONE', TONE_R), (CX + 122.0 * KX, 172.0, 'LEVEL', KNOB_R)]
 TITLE_Y = 462.0                                   # titre au milieu de la pedale (bloc titre + sous-titre centre sur 479)
 SUB_Y = 514.0
-STATUS = (CX - 175.0, 552.0, 350.0, 56.0)       # ecran d'etat (dessine par le plugin)
-PRESET = (CX - 175.0, 620.0, 350.0, 36.0)       # barre de presets (dessinee par le plugin)
+STATUS = (CX - 175.0 * KX, 552.0, 350.0 * KX, 56.0)       # ecran d'etat (dessine par le plugin)
+PRESET = (CX - 175.0 * KX, 620.0, 350.0 * KX, 36.0)       # barre de presets (dessinee par le plugin)
 LED = (CX, 708.0)
 FS = (CX, 804.0)
 LOGO_C = (CX, 896.0)
+LOGO_W = 196.0                                   # largeur du logo NINE HANDS | DSP (NineHandsLogo.svg)
 JACK_Y = PY0 + 0.62 * PH                         # jacks sous le milieu de la hauteur de la pedale
 
 # ------------------------------------------------------------------ outils
 YY, XX = np.mgrid[0:H, 0:W].astype(np.float32)
 UX, UY = (XX + 0.5) / AS, (YY + 0.5) / AS
+
+def destair(pm, cell, along=1.1, across=0.35, t=0.37, w=0.08):
+    """lisse un dessin vectorise pixel par pixel (cell = taille d'une marche en pixels) : flou le long des traits, seuil doux"""
+    g = cv2.GaussianBlur(pm, (0, 0), 0.8 * cell)
+    gx = cv2.Sobel(g, cv2.CV_32F, 1, 0, ksize=3); gy = cv2.Sobel(g, cv2.CV_32F, 0, 1, ksize=3)
+    s_ = 2.5 * cell
+    jxx = cv2.GaussianBlur(gx * gx, (0, 0), s_); jyy = cv2.GaussianBlur(gy * gy, (0, 0), s_); jxy = cv2.GaussianBlur(gx * gy, (0, 0), s_)
+    th = 0.5 * np.arctan2(2 * jxy, jxx - jyy)
+    tx, ty = (-np.sin(th)).astype(np.float32), np.cos(th).astype(np.float32)
+    del g, gx, gy, jxx, jyy, jxy, th
+    base = cv2.GaussianBlur(pm, (0, 0), across * cell)
+    h_, w_ = pm.shape
+    yy, xx = np.mgrid[0:h_, 0:w_].astype(np.float32)
+    acc = np.zeros_like(pm); ws = 0.0
+    for k in np.linspace(-2.2, 2.2, 9):
+        wt = float(np.exp(-0.5 * k * k)); d = float(k * along * cell)
+        acc += wt * cv2.remap(base, xx + tx * d, yy + ty * d, cv2.INTER_LINEAR, borderValue=0); ws += wt
+    return np.clip((acc / ws - (t - w)) / (2 * w), 0, 1).astype(np.float32)
+
 
 def rrect_sd(x, y, x0, y0, w, h, r):
     cx, cy = x0 + w / 2, y0 + h / 2
@@ -126,7 +147,11 @@ FONT_LIGHT = os.path.join(ROOT, 'assets', 'fonts', 'Poppins-Light.ttf')
 ink_im = Image.new('L', (KW, KH), 0)
 dr = ImageDraw.Draw(ink_im)
 
+VTEXT, VDOTS, VRULES = [], [], []          # textes / graduations / filets dessines en vectoriel par le plugin (nets a toute taille)
+FONT_KEY = {}
+
 def spaced(x, y, txt, font, track, anchor='m', d=None):
+    if d is None and anchor == 'm': VTEXT.append((txt, FONT_KEY[id(font)], font.size / K, track, x, y, 0))
     d = d or dr
     widths = [font.getlength(ch) for ch in txt]
     total = sum(widths) + track * K * (len(txt) - 1)
@@ -140,14 +165,15 @@ f_lab = ImageFont.truetype(FONT_MED, int(22 * K))
 f_io = ImageFont.truetype(FONT_MED, int(17 * K))
 f_title = ImageFont.truetype(FONT_BOLD, int(54 * K))
 f_sub = ImageFont.truetype(FONT_LIGHT, int(19 * K))
+FONT_KEY.update({id(f_lab): 'medium', id(f_io): 'medium', id(f_title): 'bold', id(f_sub): 'light'})
 for (x, y, txt, KR) in KNOBS:
     spaced(x, y - KR - 32, txt, f_lab, 3.5)
     for i in range(11):                                   # graduations 0 a 10 sur 300 degres
         a = math.radians(-150 + 30 * i)
         rr = KR + 11
         px, py = x + rr * math.sin(a), y - rr * math.cos(a)
-        dd = 2.2 if i in (0, 5, 10) else 1.4
-        dr.ellipse(((px - dd) * K, (py - dd) * K, (px + dd) * K, (py + dd) * K), fill=255)
+        dd = 1.8                                          # tous les points a la meme taille, sans reserve sur le visage
+        VDOTS.append((px, py, dd))
 # nom et sous-titre
 tw = spaced(CX, TITLE_Y, 'SCREAMER', f_title, 4.0)
 spaced(CX, SUB_Y, 'OVERDRIVE', f_sub, 9.0)
@@ -156,8 +182,10 @@ sw = f_sub.getlength('OVERDRIVE') / K + 9.0 * 8
 for sgn in (-1, 1):
     x0 = CX + sgn * (sw / 2 + 14); x1 = CX + sgn * (tw / 2 - 6)
     dr.rectangle((min(x0, x1) * K, (SUB_Y - 0.9) * K, max(x0, x1) * K, (SUB_Y + 0.9) * K), fill=255)
+    VRULES.append((min(x0, x1), SUB_Y - 0.9, abs(x1 - x0), 1.8))
 # IN / OUT tournes de 90 degres le long des tranches, a la hauteur des jacks
 def spaced_rot(cx, cy, txt, font, track):
+    VTEXT.append((txt, FONT_KEY[id(font)], font.size / K, track, cx, cy, 90))
     widths = [font.getlength(ch) for ch in txt]
     total = sum(widths) + track * K * (len(txt) - 1)
     hpx = int(font.size * 1.6)
@@ -208,15 +236,19 @@ ink_col = np.array([236.0, 226.0, 204.0]) * light[..., None]          # creme
 #     SCREAMER_ART="x,y,cote,opacite" (unites) : position de l'oeil droit du visage (oeil de gauche dans le dessin)
 #     et cote du cadre carre du SVG. Le dessin reste sur le boitier (coupe a ses bords) et passe SOUS tous les elements :
 #     serigraphie, logo, potards, LED, footswitch (reserves autour d'eux), ecran et barre dessines par le plugin.
-ART = os.environ.get('SCREAMER_ART', '439,341,1980,0.95')    # v1.1.0 : visage valide (oeil sous TONE, bouche en bas a droite)
+ART = os.environ.get('SCREAMER_ART', '439,365,1980,0.95')    # v1.1.0 : visage valide (oeil sous TONE, bouche en bas a droite)
 if ART:
     import subprocess, io
     ax_, ay_, full, aop = [float(v) for v in ART.split(',')]
+    ax_ = CX + (ax_ - 380.0) * KX; full *= KX          # le visage suit la largeur du boitier (oeil sous TONE, bouche en bas a droite)
     npx = int(round(full * AS))
     png = subprocess.run(['rsvg-convert', '-w', str(npx), '-h', str(npx), os.path.join(ROOT, 'design', 'source', 'portrait.svg')],
                          capture_output=True, check=True).stdout
     pr = np.asarray(Image.open(io.BytesIO(png)).convert('RGBA')).astype(np.float32) / 255.0
     pm = pr[..., 3] * (1.0 - pr[..., :3].mean(-1))           # seuls les traits sombres deviennent de l'encre
+    # le SVG est un bitmap vectorise pixel par pixel (marches de 0,478 unite SVG) : agrandi sur la coque, les traits
+    # deviendraient des escaliers. Lissage le long des traits (orientation par tenseur de structure) puis seuil doux.
+    pm = destair(pm, npx * 0.4784689 / 540.0)
     x0p = int(round((ax_ - full * 326.5 / 800.0) * AS)); y0p = int(round((ay_ - full * 381.5 / 800.0) * AS))
     lay = np.zeros((H, W), np.float32)
     sx0, sy0 = max(0, -x0p), max(0, -y0p); ex, ey = min(npx, W - x0p), min(npx, H - y0p)
@@ -224,9 +256,10 @@ if ART:
         lay[y0p + sy0:y0p + ey, x0p + sx0:x0p + ex] = pm[sy0:ey, sx0:ex]
     # reserves : serigraphie et logo (marge ~3 unites), potards, LED, footswitch
     keep_out = (ink > 0.05).astype(np.uint8)
-    _lg = np.asarray(Image.open(os.path.join(ROOT, 'assets', 'nine_hands_logo_blanc.png')).convert('RGBA'))[..., 3]
-    _lw = int(196.0 * AS); _lh = int(round(_lw * _lg.shape[0] / _lg.shape[1]))
-    _la = cv2.resize(_lg, (_lw, _lh), interpolation=cv2.INTER_AREA) > 20
+    _lw = int(LOGO_W * AS)
+    _lg = np.asarray(Image.open(io.BytesIO(subprocess.run(['rsvg-convert', '-w', str(_lw), os.path.join(ROOT, 'NineHandsLogo.svg')],
+                                capture_output=True, check=True).stdout)).convert('RGBA'))[..., 3]
+    _lh = _lg.shape[0]; _la = _lg > 20
     _x0, _y0 = int(LOGO_C[0] * AS - _lw / 2), int(LOGO_C[1] * AS - _lh / 2)
     keep_out[_y0:_y0 + _lh, _x0:_x0 + _lw] |= _la.astype(np.uint8)
     keep_out = cv2.dilate(keep_out, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (int(6 * AS) | 1, int(6 * AS) | 1))).astype(np.float32)
@@ -240,22 +273,27 @@ if ART:
     art_a = np.clip(lay * aop, 0, 1) * (1 - np.clip(keep_out * 1.6, 0, 1)) * on_top
     art_col = np.array([16.0, 8.0, 9.0]) + 10.0 * (light[..., None] - 1.0) * 10       # encre noire, a peine plus claire dans la lumiere
     img = img * (1 - art_a[..., None]) + art_col * art_a[..., None]
-img = img * (1 - ink[..., None]) + ink_col * ink[..., None]
-
-# ------------------------------------------------------------------ 4. logo NINE HANDS | DSP (blanc), en bas au centre
-logo = np.asarray(Image.open(os.path.join(ROOT, 'assets', 'nine_hands_logo_blanc.png')).convert('RGBA')).astype(np.float32)
-LOGO_W = 196.0
-lw, lh = int(LOGO_W * AS), int(round(LOGO_W * AS * logo.shape[0] / logo.shape[1]))
-lrgb = cv2.resize(logo[..., :3], (lw, lh), interpolation=cv2.INTER_AREA)
-la = cv2.resize(logo[..., 3], (lw, lh), interpolation=cv2.INTER_AREA) / 255.0
-lx0, ly0 = int(LOGO_C[0] * AS - lw / 2), int(LOGO_C[1] * AS - lh / 2)
-reg = img[ly0:ly0 + lh, lx0:lx0 + lw]
-lcol = lrgb * 0.92 * light[ly0:ly0 + lh, lx0:lx0 + lw, None]
-img[ly0:ly0 + lh, lx0:lx0 + lw] = reg * (1 - la[..., None]) + lcol * la[..., None]
+# textes, graduations, filets et logo ne sont plus imprimes dans le fond : le plugin les dessine en vectoriel
+# (police Poppins, logo NineHandsLogo.svg) au-dessus de l'image, nets a toutes les tailles de fenetre
 img += (fbm((H, W), [1], [0.9], 22) * body)[..., None]          # le grain de la peinture reste visible
 
 # ------------------------------------------------------------------ 5. potards (photo du kit, repere efface : seul le repere du plugin tourne)
 print('potards, LED, footswitch...')
+# occlusion autour des elements en relief (potards, LED, footswitch ; ni les jacks, traites plus bas, ni l'ecran)
+def occlusion(mask, strength=1.0):
+    contact = cv2.GaussianBlur(mask, (0, 0), 3.0 * AS)
+    soft = cv2.GaussianBlur(mask, (0, 0), 14.0 * AS)
+    o = np.clip(contact * 0.55 + soft * 0.9, 0, 0.5) * strength * (1.0 - mask)
+    img[...] = img * (1.0 - o * body)[..., None]
+_m = np.zeros((H, W), np.float32)
+for (x, y, _, KR) in KNOBS:
+    _m = np.maximum(_m, np.clip((KR - np.hypot(UX - x, UY - y)) * AS, 0, 1))
+_m = np.maximum(_m, np.clip((12.0 * 1.07 - np.hypot(UX - LED[0], UY - LED[1])) * AS, 0, 1) * 0.6)
+_fs_tmp = PC.footswitch_sprite(100.0, AS)[0]
+_fa = np.zeros((H, W), np.float32); _n = _fs_tmp.shape[0]; _x0 = int(round((FS[0] - _n / AS / 2) * AS)); _y0 = int(round((FS[1] - _n / AS / 2) * AS))
+_fa[_y0:_y0 + _n, _x0:_x0 + _n] = np.clip((_fs_tmp[..., 3] / 255.0 - 0.86) / 0.14, 0, 1)
+_m = np.maximum(_m, _fa)
+occlusion(_m)
 for (x, y, _, KR) in KNOBS:
     KN, KS = PC.knob_sprite(KR, AS)
     over(img, KN, (x - KS / 2) * AS, (y - KS / 2) * AS)
@@ -279,8 +317,23 @@ alpha = body.copy()
 for side in (-1, 1):
     j, jw_u, jh_u = PC.jack_sprite(JACK_LEN, AS, side)
     jh, jw = j.shape[:2]
-    x0 = int(round((PX0 * AS - jw + 2) if side < 0 else ((PX0 + PW) * AS - 2)))
+    # affleurant au bord du boitier (plus de recouvrement de l'arete) ; un peu ecrase en largeur pour rester dans l'image
+    jw2 = int(math.floor(JACK_PROT * AS))
+    if jw2 != jw:
+        pm_ = j.copy(); pm_[..., :3] *= pm_[..., 3:4] / 255.0
+        pm_ = cv2.resize(pm_, (jw2, jh), interpolation=cv2.INTER_AREA)
+        a_ = np.maximum(pm_[..., 3:4], 1e-3); pm_[..., :3] = np.where(pm_[..., 3:4] > 0.5, pm_[..., :3] * 255.0 / a_, 0)
+        j = pm_; jw = jw2
+    x0 = int(round((PX0 * AS - jw) if side < 0 else ((PX0 + PW) * AS)))
     y0 = int(round(JACK_Y * AS - jh / 2))
+    # occlusion sur le boitier autour de l'embase (seulement sur le boitier, jamais dans la partie transparente)
+    occ = np.zeros((H, W), np.float32)
+    occ[y0:y0 + jh, x0:x0 + jw] = j[..., 3] / 255.0
+    contact = cv2.GaussianBlur(occ, (0, 0), 3.0 * AS)        # taille des ombres doublee (nov. 2026)
+    soft = cv2.GaussianBlur(occ, (0, 0), 18.0 * AS)
+    occ = np.clip(contact * 0.9 + soft * 1.6, 0, 0.62)
+    occ *= 0.2 if side > 0 else 0.7                  # jack de droite (IN) -80 %, jack de gauche (OUT) -30 % (demande nov. 2026)
+    img *= (1.0 - occ * body)[..., None]
     over(img, j, x0, y0)
     ja = np.zeros((H, W), np.float32)
     ja[y0:y0 + jh, x0:x0 + jw] = j[..., 3] / 255.0
@@ -344,6 +397,14 @@ with open(os.path.join(ROOT, 'Layout.h'), 'w') as fo:
     fo.write(f"    const float statusFont = {f(28.0 * SC)}, presetFont = {f(21.0 * SC)};\n")
     fo.write(f"    const juce::Rectangle<float> boxRect {RC((PX0, PY0, PW, PH))};   // boitier\n")
     fo.write(f"    const float jackY = {f(Y(JACK_Y))};\n")
+    fo.write("    // serigraphie vectorielle : texte, police (0 medium, 1 bold, 2 light), taille em, espacement, centre, rotation (degres)\n")
+    fo.write("    struct Txt { const char* s; int font; float em, track, x, y, rot; };\n")
+    fk = {'medium': 0, 'bold': 1, 'light': 2}
+    fo.write("    const Txt texts[] = {\n" + ",\n".join(f'        {{ "{t[0]}", {fk[t[1]]}, {f(t[2] * SC)}, {f(t[3] * SC)}, {f(X(t[4]))}, {f(Y(t[5]))}, {f(t[6])} }}' for t in VTEXT) + "\n    };\n")
+    fo.write("    struct Dot { float x, y, r; };\n")
+    fo.write("    const Dot dots[] = { " + ", ".join(f"{{ {f(X(d[0]))}, {f(Y(d[1]))}, {f(d[2] * SC)} }}" for d in VDOTS) + " };\n")
+    fo.write("    const juce::Rectangle<float> rules[] = { " + ", ".join(RC(r) for r in VRULES) + " };\n")
+    fo.write(f"    const juce::Point<float> logoPos {PT(LOGO_C)}; const float logoW = {f(LOGO_W * SC)};\n")
     fo.write("}\n")
 
 # ------------------------------------------------------------------ 10. apercu (LED allumee, ecran et barre esquisses)
