@@ -61,10 +61,13 @@ public:
     void mouseMove (const juce::MouseEvent&) override;
     void mouseExit (const juce::MouseEvent&) override;
 
-    // Repere de reference (100 %) et taille par defaut = taille minimale (identique a Echoflex / Doorn / Strong Pickle)
-    static constexpr int baseW = 760;
-    static constexpr int baseH = 958;
+    // Repere du fond (pedale plein cadre, image 965 x 1800 px / 2). Hauteurs de fenetre des pedales simples :
+    // taille par defaut = taille minimale 493 px (« 60 % »), 100 % = 958 px, jusqu'a 150 %.
+    static constexpr float baseW = layout::frameW;
+    static constexpr float baseH = layout::frameH;
     static constexpr int defaultH = 493;
+    static constexpr int refH = 958;
+    static constexpr int maxH = refH * 3 / 2;
 
     void setScaledHeight (int h);
     static constexpr int numSizes = 3;          // 60 % (defaut d'origine) / 75 % / 100 %

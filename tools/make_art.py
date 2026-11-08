@@ -7,9 +7,12 @@ ecran d'etat + barre de presets dessines par le plugin, LED rouge, footswitch, l
 Pieces photo du kit NINE HANDS | DSP (potard, LED, footswitch, embases jack : tools/photo_controls.py, repris de Darkbass).
 Une seule lumiere pour toute la pedale : en haut a gauche (ombres portees vers le bas a droite).
 
-Repere du plugin : 760 x 958 unites (format simple, comme Echoflex / Doorn / Strong Pickle), images en 2x (1520 x 1916).
+Regle NINE HANDS | DSP des pedales simples : image du plugin de 965 x 1800 pixels, la pedale plein cadre (le boitier touche
+le haut et le bas de l'image, les jacks touchent les bords gauche et droit), fond transparent seulement autour des jacks
+(et dans les coins arrondis). Le dessin se fait dans un repere de travail 760 x 958 unites (2 px par unite), puis l'image
+finale est recadree sur le boitier + jacks et mise a l'echelle : repere du plugin 482,5 x 900 unites = 965 x 1800 px / 2.
 Sorties (racine du depot) :
-  background.jpg   fond complet (boitier, serigraphie, potards fixes, footswitch, LED eteinte, jacks, logo)
+  background.png   fond complet 965 x 1800 RGBA (boitier, serigraphie, potards fixes, footswitch, LED eteinte, jacks, logo)
   glow_red.png     facade eclairee par la LED rouge (canal alpha = seule la lumiere ajoutee)
   led_on.png       lentille allumee
   fs_refl.png      reflet rouge de la LED sur le flanc de l'ecrou du footswitch (calque alpha)
@@ -34,8 +37,16 @@ L = np.array([-0.46, -0.62, 0.64]); L /= np.linalg.norm(L)        # vers la lumi
 V = np.array([0.0, 0.0, 1.0]); HV = (L + V) / np.linalg.norm(L + V)
 
 # ------------------------------------------------------------------ geometrie (unites)
-PX0, PY0, PW, PH, PR = 150.0, 34.0, 460.0, 890.0, 30.0          # boitier (format 125B : 66 x 122 mm environ)
+OUT_W, OUT_H = 965, 1800                         # image finale (regle des pedales simples)
+JACK_LEN = 104.0                                 # longueur de l'embase le long de la tranche
+_jtest = PC.jack_sprite(JACK_LEN, AS, 1)
+JACK_PROT = _jtest[1] - 1.5 / AS                 # saillie de l'embase hors du boitier (unites)
+PY0, PH, PR = 34.0, 890.0, 30.0
+PW = OUT_W / OUT_H * PH - 2 * JACK_PROT          # largeur du boitier : boitier + jacks = proportions de l'image finale
+PX0 = (UW - PW) / 2
 CX = PX0 + PW / 2
+CROP_X0, CROP_W = PX0 - JACK_PROT, PW + 2 * JACK_PROT     # cadre final (unites de travail)
+SC = (OUT_H / 2.0) / PH                          # unites de travail -> unites du plugin (965 x 1800 / 2)
 # disposition des potards de la TS9 : DRIVE en haut a gauche, LEVEL en haut a droite, TONE plus petit au centre, plus bas
 KNOB_R, TONE_R = 47.0, 37.0
 KNOBS = [(CX - 118.0, 158.0, 'DRIVE', KNOB_R), (CX, 268.0, 'TONE', TONE_R), (CX + 118.0, 158.0, 'LEVEL', KNOB_R)]
@@ -262,22 +273,28 @@ over(img, FSPR, (FS[0] - FS_W / 2) * AS, (FS[1] - FS_W / 2) * AS)
 Image.fromarray(FSREFL, 'RGBA').save(os.path.join(ROOT, 'fs_refl.png'))
 
 # ------------------------------------------------------------------ 6. embases jack (photo du kit) : OUT a gauche, IN a droite
-JACK_LEN = 104.0
+#     hors du boitier le fond est transparent : pas d'ombre portee sur une surface, seul le metal de l'embase est opaque
+alpha = body.copy()
 for side in (-1, 1):
     j, jw_u, jh_u = PC.jack_sprite(JACK_LEN, AS, side)
     jh, jw = j.shape[:2]
-    x0 = (PX0 * AS - jw + 2) if side < 0 else ((PX0 + PW) * AS - 2)
-    y0 = JACK_Y * AS - jh / 2
-    sh = np.zeros((H, W), np.float32)
-    sh[int(y0):int(y0) + jh, int(x0):int(x0) + jw] = j[..., 3] / 255.0
-    sh = (cv2.GaussianBlur(cv2.warpAffine(sh, np.float32([[1, 0, 10], [0, 1, 14]]), (W, H)), (0, 0), 8) * 0.6
-          + cv2.GaussianBlur(cv2.warpAffine(sh, np.float32([[1, 0, 2], [0, 1, 3]]), (W, H)), (0, 0), 2) * 0.35) * (1 - body)
-    img *= (1 - np.clip(sh, 0, 0.8))[..., None]
+    x0 = int(round((PX0 * AS - jw + 2) if side < 0 else ((PX0 + PW) * AS - 2)))
+    y0 = int(round(JACK_Y * AS - jh / 2))
     over(img, j, x0, y0)
+    ja = np.zeros((H, W), np.float32)
+    ja[y0:y0 + jh, x0:x0 + jw] = j[..., 3] / 255.0
+    alpha = np.maximum(alpha, ja)
 
-# ------------------------------------------------------------------ 7. sauvegarde du fond
-bg8 = np.clip(img, 0, 255).astype(np.uint8)
-Image.fromarray(bg8).save(os.path.join(ROOT, 'background.jpg'), quality=94, subsampling=0)
+# ------------------------------------------------------------------ 7. sauvegarde du fond : 965 x 1800, pedale plein cadre, transparent autour des jacks
+def to_out(a):
+    """recadre sur boitier + jacks (repere de travail) et met a l'echelle de l'image finale"""
+    x0, x1 = CROP_X0 * AS, (CROP_X0 + CROP_W) * AS
+    y0, y1 = PY0 * AS, (PY0 + PH) * AS
+    M = np.float32([[OUT_W / (x1 - x0), 0, -x0 * OUT_W / (x1 - x0)], [0, OUT_H / (y1 - y0), -y0 * OUT_H / (y1 - y0)]])
+    return cv2.warpAffine(a, M, (OUT_W, OUT_H), flags=cv2.INTER_AREA if OUT_H < (y1 - y0) else cv2.INTER_CUBIC)
+out_rgb = np.clip(to_out(img), 0, 255); out_a = np.clip(to_out(alpha), 0, 1)
+Image.fromarray(np.dstack([out_rgb, out_a * 255]).astype(np.uint8), 'RGBA').save(os.path.join(ROOT, 'background.png'), optimize=True)
+if os.path.exists(os.path.join(ROOT, 'background.jpg')): os.remove(os.path.join(ROOT, 'background.jpg'))
 
 # ------------------------------------------------------------------ 8. facade eclairee par la LED rouge (calque alpha : seule la lumiere ajoutee)
 GR = 110.0
@@ -301,22 +318,31 @@ def glow(c, fn):
     return (x0p / AS, y0p / AS, size / AS, size / AS)
 GLR = glow(LED, 'glow_red.png')
 
-# ------------------------------------------------------------------ 9. Layout.h
+# ------------------------------------------------------------------ 9. Layout.h (repere du plugin : 482,5 x 900 unites = image 965 x 1800 / 2)
 def f(v): return f"{v:.2f}f"
-def PT(p): return "{ %s, %s }" % (f(p[0]), f(p[1]))
-def RC(r): return "{ %s, %s, %s, %s }" % (f(r[0]), f(r[1]), f(r[2]), f(r[3]))
+def X(v): return (v - CROP_X0) * SC
+def Y(v): return (v - PY0) * SC
+def PT(p): return "{ %s, %s }" % (f(X(p[0])), f(Y(p[1])))
+def RC(r): return "{ %s, %s, %s, %s }" % (f(X(r[0])), f(Y(r[1])), f(r[2] * SC), f(r[3] * SC))
+import json
+json.dump({"frame": [OUT_W / 2, OUT_H / 2], "knobs": [[X(k[0]), Y(k[1]), k[3] * SC] for k in KNOBS], "led": [X(LED[0]), Y(LED[1])],
+           "fs": [X(FS[0]), Y(FS[1])], "status": [X(STATUS[0]), Y(STATUS[1]), STATUS[2] * SC, STATUS[3] * SC],
+           "preset": [X(PRESET[0]), Y(PRESET[1]), PRESET[2] * SC, PRESET[3] * SC], "jackY": Y(JACK_Y),
+           "jackL": X(PX0 - JACK_PROT / 2), "jackR": X(PX0 + PW + JACK_PROT / 2)},
+          open(os.path.join(ROOT, 'tools', 'layout.json'), 'w'), indent=1)
 with open(os.path.join(ROOT, 'Layout.h'), 'w') as fo:
-    fo.write(f"// genere par tools/make_art.py - ne pas modifier a la main (repere {UW} x {UH}, fond 2x)\n#pragma once\n#include <juce_graphics/juce_graphics.h>\nnamespace layout\n{{\n")
+    fo.write(f"// genere par tools/make_art.py - ne pas modifier a la main (repere {OUT_W / 2} x {OUT_H / 2} = fond {OUT_W} x {OUT_H} px / 2)\n#pragma once\n#include <juce_graphics/juce_graphics.h>\nnamespace layout\n{{\n")
+    fo.write(f"    constexpr float frameW = {f(OUT_W / 2)}, frameH = {f(OUT_H / 2)};   // pedale plein cadre (jacks aux bords gauche / droit)\n")
     fo.write("    // ordre : drive, tone, level\n")
     fo.write("    const juce::Point<float> knobPos[3] = { " + ", ".join(PT(k[:2]) for k in KNOBS) + " };\n")
-    fo.write("    const float knobR[3] = { " + ", ".join(f(k[3]) for k in KNOBS) + " };\n")
-    fo.write(f"    const juce::Point<float> ledPos {PT(LED)}; const float ledS = {f(LS)};\n")
+    fo.write("    const float knobR[3] = { " + ", ".join(f(k[3] * SC) for k in KNOBS) + " };\n")
+    fo.write(f"    const juce::Point<float> ledPos {PT(LED)}; const float ledS = {f(LS * SC)};\n")
     fo.write(f"    const juce::Rectangle<float> glowRect {RC(GLR)};\n")
-    fo.write(f"    const juce::Point<float> fsPos {PT(FS)}; const float footR = {f(FS_BTN)}, fsS = {f(FS_W)};   // bouton / sprite\n")
+    fo.write(f"    const juce::Point<float> fsPos {PT(FS)}; const float footR = {f(FS_BTN * SC)}, fsS = {f(FS_W * SC)};   // bouton / sprite\n")
     fo.write(f"    const juce::Rectangle<float> statusRect {RC(STATUS)}, presetRect {RC(PRESET)};\n")
-    fo.write(f"    const float statusFont = {f(28.0)}, presetFont = {f(21.0)};\n")
-    fo.write(f"    const juce::Rectangle<float> boxRect {RC((PX0, PY0, PW, PH))};   // boitier (notice)\n")
-    fo.write(f"    const float jackY = {f(JACK_Y)};\n")
+    fo.write(f"    const float statusFont = {f(28.0 * SC)}, presetFont = {f(21.0 * SC)};\n")
+    fo.write(f"    const juce::Rectangle<float> boxRect {RC((PX0, PY0, PW, PH))};   // boitier\n")
+    fo.write(f"    const float jackY = {f(Y(JACK_Y))};\n")
     fo.write("}\n")
 
 # ------------------------------------------------------------------ 10. apercu (LED allumee, ecran et barre esquisses)
@@ -326,5 +352,7 @@ over(prev, gi, GLR[0] * AS, GLR[1] * AS)
 over(prev, LDON, (LED[0] - LS / 2) * AS, (LED[1] - LS / 2) * AS)
 over(prev, FSREFL.astype(np.float32), (FS[0] - FS_W / 2) * AS, (FS[1] - FS_W / 2) * AS)
 os.makedirs(os.path.join(ROOT, 'design'), exist_ok=True)
-Image.fromarray(np.clip(prev, 0, 255).astype(np.uint8)).resize((UW, UH), Image.LANCZOS).save(os.path.join(ROOT, 'design', 'preview_art.png'))
+pv = np.clip(to_out(prev), 0, 255); bgc = np.array([14.0, 14.0, 15.0])
+pv = pv * out_a[..., None] + bgc * (1 - out_a[..., None])
+Image.fromarray(pv.astype(np.uint8)).save(os.path.join(ROOT, 'design', 'preview_art.png'))
 print('ok')

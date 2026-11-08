@@ -15,7 +15,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHOTS, OUT = sys.argv[1], sys.argv[2]
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 TMP = os.path.join(ROOT, "tools", "manual_assets"); os.makedirs(TMP, exist_ok=True)
 FONTS = os.path.join(ROOT, "assets", "fonts")
 for n, f in (("Pop", "Poppins-Regular"), ("PopL", "Poppins-Light"), ("PopM", "Poppins-Medium"), ("PopB", "Poppins-Bold"),
@@ -25,19 +25,21 @@ for n, f in (("Pop", "Poppins-Regular"), ("PopL", "Poppins-Light"), ("PopM", "Po
 ACC = colors.HexColor("#B3202A"); ACC_L = colors.HexColor("#FF6A55")        # rouge de la pedale / de la LED
 DARK = colors.HexColor("#211617"); GREY = colors.HexColor("#6A5E5F"); LIGHT = colors.HexColor("#F6ECEA")
 
-# reperes (repere 760 x 958, Layout.h)
-KNOBS = [(262, 158), (380, 268), (498, 158)]          # drive, tone, level (disposition TS9)
-LED, FS, JACK_Y = (380, 708), (380, 804), 585.8
-STATUS, PRESET = (205, 552, 350, 56), (205, 620, 350, 36)
+# reperes du plugin (482,5 x 900 unites = fond 965 x 1800 / 2), ecrits par tools/make_art.py
+import json
+LAY = json.load(open(os.path.join(ROOT, "tools", "layout.json")))
+KNOBS = [tuple(k[:2]) for k in LAY["knobs"]]          # drive, tone, level (disposition TS9)
+LED, FS, JACK_Y = tuple(LAY["led"]), tuple(LAY["fs"]), LAY["jackY"]
+STATUS, PRESET = tuple(LAY["status"]), tuple(LAY["preset"])
 
 def shot(name): return Image.open(os.path.join(SHOTS, name)).convert("RGB")
 src = shot("screamer_status.png")
-k = src.height / 958.0
+k = src.height / LAY["frame"][1]
 
 # ---------- capture annotee ----------
 marks = [(1, KNOBS[0][0] - 62, KNOBS[0][1] - 58), (2, KNOBS[1][0] + 62, KNOBS[1][1] + 20), (3, KNOBS[2][0] + 62, KNOBS[2][1] - 58),
          (4, STATUS[0] + 8, STATUS[1] - 14), (5, PRESET[0] - 22, PRESET[1] + 18), (6, LED[0] + 34, LED[1]),
-         (7, FS[0] + 80, FS[1]), (8, 100, JACK_Y - 70), (9, 660, JACK_Y - 70)]
+         (7, FS[0] + 80, FS[1]), (8, LAY["jackL"] + 16, JACK_Y - 66), (9, LAY["jackR"] - 16, JACK_Y - 66)]
 ann = src.copy(); dr = ImageDraw.Draw(ann)
 fnt = ImageFont.truetype(os.path.join(FONTS, "Poppins-Bold.ttf"), 34)
 for n, x, y in marks:
@@ -52,38 +54,13 @@ def strip(parts, path, gap=18):
     x = 0
     for p in parts: s.paste(p, (x, 0)); x += p.width + gap
     s.save(path); return path
-box_on = (270, 668, 490, 880)
+box_on = (LED[0] - 110, LED[1] - 40, LED[0] + 110, FS[1] + 76)
 on_img = strip([crop_u(shot("screamer_bypass.png"), box_on), crop_u(src, box_on)], os.path.join(TMP, "screamer_onoff.png"))
-bar_img = os.path.join(TMP, "screamer_bar.png"); crop_u(src, (190, 540, 570, 666)).save(bar_img)
+bar_img = os.path.join(TMP, "screamer_bar.png"); crop_u(src, (STATUS[0] - 15, STATUS[1] - 12, STATUS[0] + STATUS[2] + 15, PRESET[1] + PRESET[3] + 10)).save(bar_img)
 
 # ---------- couverture : pedale detouree (boitier rouge + jacks), reflet au sol, halo rouge tres doux ----------
-a = np.asarray(src).astype(np.float32)
-hsv = cv2.cvtColor(a.astype(np.uint8), cv2.COLOR_RGB2HSV)
-red = (((hsv[..., 0] < 12) | (hsv[..., 0] > 168)) & (hsv[..., 1] > 90) & (hsv[..., 2] > 30)).astype(np.uint8)
-ys, xs = np.where(red)
-x0, x1, y0, y1 = np.percentile(xs, 0.2), np.percentile(xs, 99.8), np.percentile(ys, 0.2), np.percentile(ys, 99.8)
-msk = np.zeros(red.shape, np.uint8)
-rr = int(30 * k)
-cv2.rectangle(msk, (int(x0) + rr, int(y0)), (int(x1) - rr, int(y1)), 255, -1)
-cv2.rectangle(msk, (int(x0), int(y0) + rr), (int(x1), int(y1) - rr), 255, -1)
-for cx_, cy_ in ((x0 + rr, y0 + rr), (x1 - rr, y0 + rr), (x0 + rr, y1 - rr), (x1 - rr, y1 - rr)):
-    cv2.circle(msk, (int(cx_), int(cy_)), rr, 255, -1)
-jy0, jy1 = int((JACK_Y - 62) * k), int((JACK_Y + 62) * k)
-jw = int(30 * k)
-lum_ = a.mean(-1)
-for xa_, xb_, bgx in ((int(x0) - jw, int(x0) + 2, int(x0) - jw - int(12 * k)), (int(x1) - 2, int(x1) + jw, int(x1) + jw + int(4 * k))):
-    reg_ = lum_[jy0:jy1, xa_:xb_]
-    bg_ = np.median(lum_[jy0:jy1, bgx:bgx + int(8 * k)], axis=1, keepdims=True)
-    jm = (np.abs(reg_ - bg_) > 14).astype(np.uint8)
-    jm = cv2.morphologyEx(jm, cv2.MORPH_CLOSE, np.ones((9, 9), np.uint8))
-    jm = cv2.morphologyEx(jm, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
-    n_, lab_, st_, _ = cv2.connectedComponentsWithStats(jm, 8)
-    if n_ > 1: jm = (lab_ == 1 + np.argmax(st_[1:, 4])).astype(np.uint8)
-    pts_ = cv2.findNonZero(jm)
-    if pts_ is not None:
-        jm = np.zeros_like(jm); cv2.fillConvexPoly(jm, cv2.convexHull(pts_), 1)
-    msk[jy0:jy1, xa_:xb_] = np.maximum(msk[jy0:jy1, xa_:xb_], jm * 255)
-msk = cv2.GaussianBlur(msk, (0, 0), 1.0)
+# masque de la pedale (boitier + jacks) : canal alpha du fond 965 x 1800, a la taille de la capture
+msk = np.asarray(Image.open(os.path.join(ROOT, "background.png")).getchannel("A").resize(src.size, Image.LANCZOS))
 cut = Image.new("RGBA", src.size, (0, 0, 0, 0)); cut.paste(src, (0, 0), Image.fromarray(msk))
 cut = cut.crop(cut.getbbox())
 cw, ch = cut.size
@@ -202,7 +179,7 @@ T = {
         "<b>Expression pedals</b>: movements are never stepped. Screamer ramps to each new value over the time between two messages; the real travel of your pedal is learnt automatically (a pedal sending only 2 to 116 still reaches exactly 0 and 100 %). For a knob on CC 0 to 31, CC n+32 is read as its fine 14-bit part.",
         "<b>MIDI footswitch</b>: latching (default) or momentary, right-click &gt; Settings. <b>Program Change 1 to 10</b> recall the factory presets. All parameters can also be automated in the DAW."],
  win_t="7. Window",
- win=["Screamer uses the single pedal format of Echoflex, Doorn and Strong Pickle: it opens at 60 % and can never be made smaller. Right-click &gt; <b>Plugin size</b>: <b>60 %</b>, <b>75 %</b> or <b>100 %</b>, \"(default)\" marking the default size; <b>Default size (new windows)</b> chooses the size at which every new Screamer window opens (one setting shared by all instances) and resizes the current one at once. You can also drag the bottom-right corner up to 150 % (proportions are kept).",
+ win=["Screamer uses the single pedal format of NINE HANDS | DSP: the window shows the pedal alone, full frame (965 × 1800 artwork), it opens at 60 % and can never be made smaller. Right-click &gt; <b>Plugin size</b>: <b>60 %</b>, <b>75 %</b> or <b>100 %</b>, \"(default)\" marking the default size; <b>Default size (new windows)</b> chooses the size at which every new Screamer window opens (one setting shared by all instances) and resizes the current one at once. You can also drag the bottom-right corner up to 150 % (proportions are kept).",
       "The <b>screen</b> shows the setting of the knob you just moved (e.g. <i>DRIVE 64 %</i>); it appears when a setting moves and fades out after 2.5 s. It also shows the MIDI Learn messages. The <b>preset bar</b> under it always shows the current preset (or <i>Edited</i>)."],
  bar_cap="Screen and preset bar.",
  pre_t="8. Presets",
@@ -263,7 +240,7 @@ T = {
         "<b>Pédales d'expression</b> : les mouvements ne sont jamais saccadés. Screamer rejoint chaque nouvelle valeur par une rampe sur le temps mesuré entre deux messages ; la course réelle de votre pédale est apprise automatiquement (une pédale qui n'envoie que 2 à 116 atteint quand même exactement 0 et 100 %). Pour un potard sur un CC de 0 à 31, le CC n+32 est lu comme sa partie fine (14 bits).",
         "<b>Footswitch MIDI</b> : à accrochage (par défaut) ou momentané, clic droit &gt; Settings. <b>Program Change 1 à 10</b> : rappel des presets usine. Tous les paramètres sont aussi automatisables dans le DAW."],
  win_t="7. Fenêtre",
- win=["Screamer utilise le format pédale simple d'Echoflex, de Doorn et de Strong Pickle : il s'ouvre à 60 % et ne peut jamais être réduit en dessous. Clic droit &gt; <b>Plugin size</b> : <b>60 %</b>, <b>75 %</b> ou <b>100 %</b>, « (default) » indiquant la taille par défaut ; <b>Default size (new windows)</b> choisit la taille d'ouverture de toutes les nouvelles fenêtres de Screamer (réglage commun à toutes les instances) et redimensionne aussitôt la fenêtre courante. Vous pouvez aussi tirer le coin en bas à droite jusqu'à 150 % (les proportions sont conservées).",
+ win=["Screamer utilise le format pédale simple de NINE HANDS | DSP : la fenêtre montre la pédale seule, plein cadre (visuel de 965 × 1800), elle s'ouvre à 60 % et ne peut jamais être réduite en dessous. Clic droit &gt; <b>Plugin size</b> : <b>60 %</b>, <b>75 %</b> ou <b>100 %</b>, « (default) » indiquant la taille par défaut ; <b>Default size (new windows)</b> choisit la taille d'ouverture de toutes les nouvelles fenêtres de Screamer (réglage commun à toutes les instances) et redimensionne aussitôt la fenêtre courante. Vous pouvez aussi tirer le coin en bas à droite jusqu'à 150 % (les proportions sont conservées).",
       "L'<b>écran</b> affiche le réglage du potard que vous venez de bouger (par ex. <i>DRIVE 64 %</i>) ; il apparaît quand un réglage bouge et s'efface au bout de 2,5 s. Il affiche aussi les messages du MIDI Learn. La <b>barre de presets</b> en dessous affiche en permanence le preset (ou <i>Edited</i>)."],
  bar_cap="Écran et barre de presets.",
  pre_t="8. Presets",
@@ -302,7 +279,7 @@ def section(lang):
     for h, x in t["inst"]: f.append(P(h, "h2")); f.append(P(x))
     f.append(PageBreak())
     f.append(P(t["ov_t"], "h1"))
-    ov = Table([[[img(annotated, 92 * mm)],
+    ov = Table([[[img(annotated, 80 * mm)],
                  [table(t["ov_rows"], [9 * mm, 27 * mm, W - 96 * mm - 36 * mm]), Spacer(1, 6 * mm), img(on_img, 62 * mm), P(t["on_cap"], "small")]]],
                colWidths=[96 * mm, W - 96 * mm])
     ov.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0)]))

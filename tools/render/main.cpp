@@ -30,9 +30,9 @@ int main (int argc, char** argv)
         std::printf ("%s (%d x %d)\n", f.getFullPathName().toRawUTF8(), img.getWidth(), img.getHeight());
     };
     shot ("screamer_default", 0, true,  false, ScreamerAudioProcessorEditor::defaultH);
-    shot ("screamer_status",  0, true,  true,  ScreamerAudioProcessorEditor::baseH);
-    shot ("screamer_bypass",  2, false, false, ScreamerAudioProcessorEditor::baseH);
-    shot ("screamer_full",    8, true,  false, ScreamerAudioProcessorEditor::baseH);
+    shot ("screamer_status",  0, true,  true,  ScreamerAudioProcessorEditor::refH);
+    shot ("screamer_bypass",  2, false, false, ScreamerAudioProcessorEditor::refH);
+    shot ("screamer_full",    8, true,  false, ScreamerAudioProcessorEditor::refH);
 
     // test pedale d'expression : course 2..116 sur CC 21 (drive)
     {

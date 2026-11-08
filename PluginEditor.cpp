@@ -109,7 +109,7 @@ ScreamerAudioProcessorEditor::ScreamerAudioProcessorEditor (ScreamerAudioProcess
     : AudioProcessorEditor (&p), proc (p),
       footswitch (*p.apvts.getParameter ("active"))
 {
-    background = ImageCache::getFromMemory (BinaryData::background_jpg, BinaryData::background_jpgSize);
+    background = ImageCache::getFromMemory (BinaryData::background_png, BinaryData::background_pngSize);
     glow       = ImageCache::getFromMemory (BinaryData::glow_red_png, BinaryData::glow_red_pngSize);
     ledOn      = ImageCache::getFromMemory (BinaryData::led_on_png, BinaryData::led_on_pngSize);
     footswitch.reflection = ImageCache::getFromMemory (BinaryData::fs_refl_png, BinaryData::fs_refl_pngSize);
@@ -150,9 +150,9 @@ ScreamerAudioProcessorEditor::ScreamerAudioProcessorEditor (ScreamerAudioProcess
     ledLevel = proc.rawAt (ScreamerAudioProcessor::rActive) > 0.5f ? 1.0f : 0.0f;
 
     // Taille par defaut = taille minimale (impossible de reduire en dessous), proportions bloquees
-    const int defaultW = roundToInt ((float) defaultH * (float) baseW / (float) baseH);
+    const int defaultW = roundToInt ((float) defaultH * baseW / baseH);
     setResizable (true, true);
-    setResizeLimits (defaultW, defaultH, baseW * 3 / 2, baseH * 3 / 2);
+    setResizeLimits (defaultW, defaultH, roundToInt ((float) maxH * baseW / baseH), maxH);
     if (auto* cons = getConstrainer())
         cons->setFixedAspectRatio ((double) baseW / (double) baseH);
     setOpaque (true);                      // anti-gel : l'hote ne redessine jamais ce qui est derriere la fenetre
@@ -172,19 +172,19 @@ ScreamerAudioProcessorEditor::~ScreamerAudioProcessorEditor()
 //==============================================================================
 int ScreamerAudioProcessorEditor::sizeHeight (int idx)
 {
-    const int h[numSizes] = { (int) defaultH, roundToInt (baseH * 0.75f), (int) baseH };
+    const int h[numSizes] = { (int) defaultH, roundToInt (refH * 0.75f), (int) refH };
     return h[jlimit (0, numSizes - 1, idx)];
 }
 
 void ScreamerAudioProcessorEditor::setScaledHeight (int h)
 {
-    h = jlimit ((int) defaultH, baseH * 3 / 2, h);
-    setSize (roundToInt ((float) h * (float) baseW / (float) baseH), h);
+    h = jlimit ((int) defaultH, (int) maxH, h);
+    setSize (roundToInt ((float) h * baseW / baseH), h);
 }
 
 Rectangle<int> ScreamerAudioProcessorEditor::scaled (Rectangle<float> r) const
 {
-    const float s = (float) getHeight() / (float) baseH;
+    const float s = (float) getHeight() / baseH;
     return r.transformedBy (AffineTransform::scale (s)).getSmallestIntegerContainer();
 }
 
@@ -207,7 +207,7 @@ void ScreamerAudioProcessorEditor::rebuildCaches (float sc)
     cacheW = w; cacheH = h; cacheScale = sc;
     const int pw = roundToInt ((float) w * sc), ph = roundToInt ((float) h * sc);
     bgScaled = (pw >= background.getWidth()) ? background : background.rescaled (pw, ph, Graphics::highResamplingQuality);
-    const float s = (float) h / (float) baseH;
+    const float s = (float) h / baseH;
     const int gpx = roundToInt (layout::glowRect.getWidth() * s * sc);
     glowS = (gpx >= glow.getWidth()) ? glow : glow.rescaled (gpx, gpx, Graphics::highResamplingQuality);
     repaint();
@@ -425,13 +425,13 @@ void ScreamerAudioProcessorEditor::paint (Graphics& g)
 {
     lastPaintMs = Time::getMillisecondCounterHiRes();
     repaintAskedMs = 0.0;
-    g.fillAll (Colours::black);
+    g.fillAll (Colour (0xff111112));          // autour des jacks : le fond de l'image est transparent
     // anti-gel : aucun rescale ici, on dessine le cache existant (ou l'original en attendant le timer)
     const Image& bg = bgScaled.isValid() ? bgScaled : background;
     g.setImageResamplingQuality (&bg == &background ? Graphics::highResamplingQuality : Graphics::lowResamplingQuality);
     if (bg.isValid()) g.drawImage (bg, getLocalBounds().toFloat());
 
-    const float s = (float) getHeight() / (float) baseH;
+    const float s = (float) getHeight() / baseH;
     g.addTransform (AffineTransform::scale (s));
     g.setImageResamplingQuality (Graphics::mediumResamplingQuality);
     drawLed (g);
@@ -452,7 +452,7 @@ static int presetZoneAt (Point<float> p)
 
 void ScreamerAudioProcessorEditor::mouseMove (const MouseEvent& e)
 {
-    const float s = (float) getHeight() / (float) baseH;
+    const float s = (float) getHeight() / baseH;
     hoverZone = presetZoneAt (e.position / s);
     setMouseCursor (hoverZone != 0 ? MouseCursor::PointingHandCursor : MouseCursor::NormalCursor);
 }
@@ -462,7 +462,7 @@ void ScreamerAudioProcessorEditor::mouseExit (const MouseEvent&) { hoverZone = 0
 void ScreamerAudioProcessorEditor::mouseDown (const MouseEvent& e)
 {
     if (e.mods.isPopupMenu()) { showContextMenu(); return; }
-    const float s = (float) getHeight() / (float) baseH;
+    const float s = (float) getHeight() / baseH;
     switch (presetZoneAt (e.position / s))
     {
         case 1: stepPreset (-1); break;

@@ -36,7 +36,8 @@ forums Seymour Duncan / PedalPCB pour les différences TS9 / TS808 (sortie 470 �
 
 ## Interface
 
-- Fenêtre ouverte à **493 px de haut** (391 × 493), impossible de la réduire en dessous, proportions bloquées, jusqu'à 150 %. Clic droit > *Plugin size* : 60 % / 75 % / 100 % ; *Default size (new windows)* pour la taille des nouvelles fenêtres.
+- **Visuel 965 × 1800 px** (`background.png`) : la pédale plein cadre, fond transparent seulement autour des jacks (règle des pédales simples NINE HANDS | DSP) ; la fenêtre montre la pédale seule.
+- Fenêtre ouverte à **493 px de haut** (264 × 493), impossible de la réduire en dessous, proportions bloquées, jusqu'à 150 %. Clic droit > *Plugin size* : 60 % / 75 % / 100 % ; *Default size (new windows)* pour la taille des nouvelles fenêtres.
 - **Écran d'état** (réglage en %, messages MIDI Learn) et **barre de presets** (flèches, menu) dessinés par le plugin, police Poppins.
 - Potards : photo du kit (`assets/kit/knob_photo.png`), seul le repère crème tourne ; double-clic = midi.
 - Footswitch du kit (référence Echoflex) : bascule à l'appui, bouton assombri tant qu'on appuie, reflet rouge de la LED sur l'écrou.
@@ -60,10 +61,11 @@ Bright Humbucker · Full Drive · Clean Mid Boost.
 - `ScreamerDSP.h` : moteur audio sans JUCE ; `PluginProcessor.*`, `PluginEditor.*` ; `Layout.h` généré.
 - `tools/make_art.py` (+ `tools/photo_controls.py`) : visuel, calques, `Layout.h`.
 - `tools/render` : compile la vraie fenêtre sous Linux et exporte les captures (`design/renders`).
-- `tools/manual.py` : notice bilingue `docs/Screamer_Manual_EN-FR_v1.1.0.pdf`.
+- `tools/manual.py` : notice bilingue `docs/Screamer_Manual_EN-FR_v1.2.0.pdf` (repères lus dans `tools/layout.json`).
 - `tests/verify.cpp` : vérification du moteur contre les valeurs publiées (gain de l'étage d'écrêtage modèle / formule, repliement, bypass, fréquences d'échantillonnage, signaux extrêmes).
 
 ## Versions
 
+- **1.2.0** (8 nov. 2026) : visuel 965 × 1800 px, pédale plein cadre, transparent seulement autour des jacks ; la fenêtre ne montre plus que la pédale (mêmes hauteurs : 493 / 719 / 958 px, jusqu'à 1437).
 - **1.1.0** (8 nov. 2026) : disposition des potards de la TS9, jacks, écran, presets et LED descendus, titre au milieu ; grand visage imprimé sur la coque ; moteur vérifié (gain 11,9 → 118, conforme à Electrosmash ; 1 kHz à ±0,05 dB de la formule à DRIVE 0) ; coefficients recalculés seulement quand un potard bouge.
 - **1.0.0** (8 nov. 2026) : première version.
