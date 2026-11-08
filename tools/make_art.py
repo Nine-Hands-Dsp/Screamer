@@ -37,12 +37,13 @@ L = np.array([-0.46, -0.62, 0.64]); L /= np.linalg.norm(L)        # vers la lumi
 V = np.array([0.0, 0.0, 1.0]); HV = (L + V) / np.linalg.norm(L + V)
 
 # ------------------------------------------------------------------ geometrie (unites)
-OUT_W, OUT_H = 965, 1800                         # image finale (regle des pedales simples)
+OUT_H = 1800                                     # image finale : 1800 px de haut (regle des pedales simples)
 JACK_LEN = 104.0                                 # longueur de l'embase le long de la tranche
 _jtest = PC.jack_sprite(JACK_LEN, AS, 1)
 JACK_PROT = _jtest[1] - 1.5 / AS                 # saillie de l'embase hors du boitier (unites)
 PY0, PH, PR = 34.0, 890.0, 30.0
-PW = OUT_W / OUT_H * PH - 2 * JACK_PROT          # largeur du boitier : boitier + jacks = proportions de l'image finale
+PW = 460.0                                       # largeur du boitier : proportions d'origine de la pedale (66 x 122 mm environ)
+OUT_W = int(round((PW + 2 * JACK_PROT) * OUT_H / PH))   # largeur de l'image : meme echelle que la hauteur (proportions homogenes)
 PX0 = (UW - PW) / 2
 CX = PX0 + PW / 2
 CROP_X0, CROP_W = PX0 - JACK_PROT, PW + 2 * JACK_PROT     # cadre final (unites de travail)

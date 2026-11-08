@@ -15,7 +15,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHOTS, OUT = sys.argv[1], sys.argv[2]
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 TMP = os.path.join(ROOT, "tools", "manual_assets"); os.makedirs(TMP, exist_ok=True)
 FONTS = os.path.join(ROOT, "assets", "fonts")
 for n, f in (("Pop", "Poppins-Regular"), ("PopL", "Poppins-Light"), ("PopM", "Poppins-Medium"), ("PopB", "Poppins-Bold"),
@@ -25,7 +25,7 @@ for n, f in (("Pop", "Poppins-Regular"), ("PopL", "Poppins-Light"), ("PopM", "Po
 ACC = colors.HexColor("#B3202A"); ACC_L = colors.HexColor("#FF6A55")        # rouge de la pedale / de la LED
 DARK = colors.HexColor("#211617"); GREY = colors.HexColor("#6A5E5F"); LIGHT = colors.HexColor("#F6ECEA")
 
-# reperes du plugin (482,5 x 900 unites = fond 965 x 1800 / 2), ecrits par tools/make_art.py
+# reperes du plugin (repere = fond / 2, 900 unites de haut), ecrits par tools/make_art.py
 import json
 LAY = json.load(open(os.path.join(ROOT, "tools", "layout.json")))
 KNOBS = [tuple(k[:2]) for k in LAY["knobs"]]          # drive, tone, level (disposition TS9)
@@ -59,7 +59,7 @@ on_img = strip([crop_u(shot("screamer_bypass.png"), box_on), crop_u(src, box_on)
 bar_img = os.path.join(TMP, "screamer_bar.png"); crop_u(src, (STATUS[0] - 15, STATUS[1] - 12, STATUS[0] + STATUS[2] + 15, PRESET[1] + PRESET[3] + 10)).save(bar_img)
 
 # ---------- couverture : pedale detouree (boitier rouge + jacks), reflet au sol, halo rouge tres doux ----------
-# masque de la pedale (boitier + jacks) : canal alpha du fond 965 x 1800, a la taille de la capture
+# masque de la pedale (boitier + jacks) : canal alpha du fond (1800 px de haut), a la taille de la capture
 msk = np.asarray(Image.open(os.path.join(ROOT, "background.png")).getchannel("A").resize(src.size, Image.LANCZOS))
 cut = Image.new("RGBA", src.size, (0, 0, 0, 0)); cut.paste(src, (0, 0), Image.fromarray(msk))
 cut = cut.crop(cut.getbbox())
@@ -112,14 +112,14 @@ def table(rows, widths, header=True, small=False):
     t.setStyle(TableStyle(style)); return t
 
 # ---------- donnees (identiques au code livre : PluginProcessor.cpp) ----------
-FACTORY = [("Classic TS9", 5.0, 5.0, 5.0), ("Texas Blues", 2.5, 6.0, 7.5), ("Tight Boost (7 strings)", 0.0, 6.5, 8.5),
+FACTORY = [("Classic TS9", 5.0, 5.0, 5.0), ("Texas Blues", 2.5, 6.0, 7.5), ("Metal Boost (7 strings)", 0.0, 6.0, 10.0),
            ("Edge of Breakup", 1.5, 5.0, 6.0), ("Rhythm Crunch", 6.0, 5.0, 5.0), ("Singing Lead", 8.5, 6.0, 5.5),
            ("Warm & Round", 4.0, 3.0, 6.0), ("Bright Humbucker", 5.0, 7.5, 5.5), ("Full Drive", 10.0, 5.0, 4.5),
            ("Clean Mid Boost", 0.0, 5.0, 6.5)]
 FACT_DESC = {
  "en": ["Everything at noon: the reference setting, warm mid-forward overdrive at about unity level.",
         "Little drive, a lot of level, tone a bit open: pushes a clean amp into a vocal, singing breakup.",
-        "Drive at zero, level high, tone slightly bright: the classic metal trick. The pedal hardly distorts but cuts the low end before the amp, so palm mutes on a 7-string in G stay tight and articulate.",
+        "Drive at zero, Level fully up, Tone around 1 o'clock: the classic metal trick. The pedal hardly distorts but cuts the low end before the amp, so palm mutes on a 7-string in G stay tight and articulate.",
         "Barely-there crunch that cleans up when you play softly or turn down the guitar.",
         "Drive past noon: a thick but defined rhythm crunch.",
         "High drive, tone slightly open: smooth sustain with the mids in front for solos.",
@@ -129,7 +129,7 @@ FACT_DESC = {
         "Drive at zero: almost clean, just the TS mid hump and the tightened low end."],
  "fr": ["Tout à midi : le réglage de référence, overdrive chaude, médiums en avant, à peu près au niveau du son direct.",
         "Peu de drive, beaucoup de level, tone un peu ouvert : pousse un ampli clair vers une saturation chantante.",
-        "Drive à zéro, level haut, tone un peu brillant : l'astuce classique du metal. La pédale sature à peine mais retire le grave avant l'ampli : les palm mutes d'une 7 cordes en Sol restent serrés et précis.",
+        "Drive à zéro, Level à fond, Tone vers 13 h : l'astuce classique du metal. La pédale sature à peine mais retire le grave avant l'ampli : les palm mutes d'une 7 cordes en Sol restent serrés et précis.",
         "Un crunch léger qui s'éclaircit quand on joue doucement ou qu'on baisse le volume de la guitare.",
         "Drive après midi : un crunch rythmique épais mais défini.",
         "Beaucoup de drive, tone un peu ouvert : sustain doux, médiums devant, pour les solos.",
@@ -165,7 +165,7 @@ T = {
  ctl_t="4. Controls in detail",
  ctl=[("DRIVE", "The 500 k audio-taper Drive pot of the TS9, in series with 51 k in the feedback loop of the clipping stage. Fully down, the gain of the mids is already about 12 (+21 dB): with a normal guitar the pedal already crunches a little and stays clean on soft playing. Fully up, the gain reaches about 118 (+41 dB) and the 51 pF capacitor across the diodes rolls the clipping off above about 5.7 kHz, so the drive gets smoother, not fizzier. The low end, below 720 Hz, is never amplified: even fully up the bass stays tight. Because the clipping is soft and the clean signal goes through with it, the drive reacts strongly to your picking and to your guitar's volume knob."),
       ("TONE", "The active tone stage of the TS9 with its real values (20 k pot, 220 ohms + 220 nF from the wiper to ground, 1 k / 220 nF at the input, 1 k feedback). Fully down, it adds a second treble roll-off (about −19 dB at 4 kHz: dark and round); fully up, it brings the treble back (about −2.5 dB at 4 kHz: open and cutting). On the hardware most of the change happens in the last third of the travel; on Screamer the pot curve is spread so that each step of the knob changes the treble by the same amount, between exactly the same two extremes."),
-      ("LEVEL", "The 100 k audio-taper Level pot of the TS9: 0 = muted. With Drive and Tone at noon and a guitar peaking at 0.1 to 0.15 V (about −20 to −16 dBFS), noon gives roughly the level of the bypassed guitar; fully up gives about +15 dB, enough to slam the front of an amp. A safety limiter keeps the output under 0 dBFS.")],
+      ("LEVEL", "The 100 k audio-taper Level pot of the TS9: 0 = muted. With Drive and Tone at noon and a guitar peaking at 0.1 to 0.15 V (about −20 to −16 dBFS), noon gives roughly the level of the bypassed guitar; fully up gives about +14 to +16 dB, enough to slam the front of an amp. There is no 0 dBFS ceiling: like the hardware, the output can go above 0 dBFS (the DAW works in floating point), up to the swing of the pedal's 9 V op-amps, about ±3.4 V (≈ +10.6 dBFS), so an amp simulator placed after Screamer is pushed as hard as a real amp.")],
  fs_t="5. Footswitch, LED and noise gate",
  fs=["<b>Footswitch</b>: it switches as soon as you press it and the cap darkens while held. In bypass, the dry signal is passed through, time-aligned with the oversampling latency reported to the DAW (the TS9 has a buffered bypass, which is transparent).",
      "<b>LED</b>: red when the effect is on, with a fade; the panel around it and the side of the footswitch nut catch its light.",
@@ -179,7 +179,7 @@ T = {
         "<b>Expression pedals</b>: movements are never stepped. Screamer ramps to each new value over the time between two messages; the real travel of your pedal is learnt automatically (a pedal sending only 2 to 116 still reaches exactly 0 and 100 %). For a knob on CC 0 to 31, CC n+32 is read as its fine 14-bit part.",
         "<b>MIDI footswitch</b>: latching (default) or momentary, right-click &gt; Settings. <b>Program Change 1 to 10</b> recall the factory presets. All parameters can also be automated in the DAW."],
  win_t="7. Window",
- win=["Screamer uses the single pedal format of NINE HANDS | DSP: the window shows the pedal alone, full frame (965 × 1800 artwork), it opens at 60 % and can never be made smaller. Right-click &gt; <b>Plugin size</b>: <b>60 %</b>, <b>75 %</b> or <b>100 %</b>, \"(default)\" marking the default size; <b>Default size (new windows)</b> chooses the size at which every new Screamer window opens (one setting shared by all instances) and resizes the current one at once. You can also drag the bottom-right corner up to 150 % (proportions are kept).",
+ win=["Screamer uses the single pedal format of NINE HANDS | DSP: the window shows the pedal alone, full frame (1800 px high artwork, width in the pedal's own proportions), it opens at 60 % and can never be made smaller. Right-click &gt; <b>Plugin size</b>: <b>60 %</b>, <b>75 %</b> or <b>100 %</b>, \"(default)\" marking the default size; <b>Default size (new windows)</b> chooses the size at which every new Screamer window opens (one setting shared by all instances) and resizes the current one at once. You can also drag the bottom-right corner up to 150 % (proportions are kept).",
       "The <b>screen</b> shows the setting of the knob you just moved (e.g. <i>DRIVE 64 %</i>); it appears when a setting moves and fades out after 2.5 s. It also shows the MIDI Learn messages. The <b>preset bar</b> under it always shows the current preset (or <i>Edited</i>)."],
  bar_cap="Screen and preset bar.",
  pre_t="8. Presets",
@@ -187,7 +187,7 @@ T = {
  fac_hdr=["PC", "Preset", "Drive / Tone / Level (%)", "Description"],
  tips_t="9. Tips",
  tips=["In Reaper place Screamer <b>before</b> your amp simulator (for example before Two Notes Genome), as you would with the real pedal.",
-       "The most famous use: <b>Drive low, Level high</b> in front of an amp that is already overdriven (preset <i>Tight Boost</i>). The pedal tightens the low end and pushes the mids, the amp does the distortion. Ideal for a 7-string in G or lower tunings.",
+       "The most famous use: <b>Drive low, Level high</b> in front of an amp that is already overdriven (preset <i>Metal Boost</i>). The pedal tightens the low end and pushes the mids, the amp does the distortion. Ideal for a 7-string in G or lower tunings.",
        "In front of a clean amp, raise Drive and keep Level around noon: it is an overdrive, not a distortion; for more gain, stack it into a crunchy amp.",
        "Roll back your guitar's volume knob to clean up the sound: the soft clipping follows it closely."],
  tech_t="10. Specifications",
@@ -195,7 +195,7 @@ T = {
        ["Latency", "32 samples (oversampling filter), reported to the DAW"],
        ["Circuit", "input buffer (≈18 Hz), clipping stage (4.7 k + 47 nF, 51 k + Drive 500 k A, 51 pF, 2 × 1S1588), tone stage (1 k / 220 nF, 20 k pot, 220 ohms + 220 nF, 1 k), Level 100 k A, TS9 output buffer"],
        ["Gain (mids)", "about +21 dB (Drive at 0) to +41 dB (Drive at 10), soft diode clipping"],
-       ["Level", "muted to about +15 dB; noon ≈ guitar level with Drive / Tone at noon"],
+       ["Level", "muted to about +15 dB; noon ≈ guitar level with Drive / Tone at noon; no 0 dBFS ceiling (pedal swing ±3.4 V)"],
        ["Processing", "clipping stage solved at each sample (trapezoidal + Newton), 4x oversampling, exact 2nd-order tone stage (bilinear), smoothed parameters"],
        ["CPU", "about 5 to 10 % of one core at 48 kHz (stereo), depending on the computer"],
        ["MIDI", "all channels; MIDI Learn on the 4 controls (nothing assigned by default), 14-bit CC, Program Change 1-10"],
@@ -226,7 +226,7 @@ T = {
  ctl_t="4. Les commandes en détail",
  ctl=[("DRIVE", "Le potentiomètre Drive de 500 k (courbe log) de la TS9, en série avec 51 k dans la contre-réaction de l'étage d'écrêtage. Au minimum, le gain des médiums est déjà d'environ 12 (+21 dB) : avec une guitare normale la pédale craque déjà un peu et reste claire quand on joue doucement. Au maximum, le gain atteint environ 118 (+41 dB) et le condensateur de 51 pF aux bornes des diodes coupe l'écrêtage au-dessus d'environ 5,7 kHz : la saturation devient plus douce, pas plus grésillante. Le grave, sous 720 Hz, n'est jamais amplifié : même à fond il reste serré. Comme l'écrêtage est doux et que le signal propre passe avec lui, la saturation réagit fortement à l'attaque et au volume de la guitare."),
       ("TONE", "L'étage de tonalité actif de la TS9 avec ses vraies valeurs (pot 20 k, 220 ohms + 220 nF du curseur à la masse, 1 k / 220 nF à l'entrée, 1 k de contre-réaction). Au minimum, il ajoute une seconde pente sur l'aigu (environ −19 dB à 4 kHz : sombre et rond) ; au maximum, il rend l'aigu (environ −2,5 dB à 4 kHz : ouvert et tranchant). Sur la pédale, l'essentiel de la variation se fait dans le dernier tiers de la course ; sur Screamer la courbe du potard est répartie pour que chaque cran change l'aigu de la même quantité, entre exactement les mêmes extrêmes."),
-      ("LEVEL", "Le potentiomètre Level de 100 k (courbe log) de la TS9 : 0 = coupé. Avec Drive et Tone à midi et une guitare qui crête à 0,1 – 0,15 V (environ −20 à −16 dBFS), midi donne à peu près le niveau de la guitare en bypass ; à fond, environ +15 dB, de quoi attaquer fort l'entrée d'un ampli. Un limiteur de sécurité garde la sortie sous 0 dBFS.")],
+      ("LEVEL", "Le potentiomètre Level de 100 k (courbe log) de la TS9 : 0 = coupé. Avec Drive et Tone à midi et une guitare qui crête à 0,1 – 0,15 V (environ −20 à −16 dBFS), midi donne à peu près le niveau de la guitare en bypass ; à fond, environ +14 à +16 dB, de quoi attaquer fort l'entrée d'un ampli. Il n'y a pas de plafond à 0 dBFS : comme sur la pédale, la sortie peut dépasser 0 dBFS (le DAW calcule en virgule flottante), jusqu'à l'excursion des amplis op de la pédale en 9 V, environ ±3,4 V (≈ +10,6 dBFS) ; un simulateur d'ampli placé après Screamer est donc poussé aussi fort qu'un vrai ampli.")],
  fs_t="5. Footswitch, LED et noise gate",
  fs=["<b>Footswitch</b> : il bascule dès l'appui et le bouton s'assombrit tant qu'on appuie. En bypass, le signal sec passe, aligné dans le temps sur la latence du sur-échantillonnage annoncée au DAW (la TS9 a un bypass bufferisé, transparent).",
      "<b>LED</b> : rouge quand l'effet est actif, en fondu ; la façade autour et le flanc de l'écrou du footswitch reçoivent sa lumière.",
@@ -240,7 +240,7 @@ T = {
         "<b>Pédales d'expression</b> : les mouvements ne sont jamais saccadés. Screamer rejoint chaque nouvelle valeur par une rampe sur le temps mesuré entre deux messages ; la course réelle de votre pédale est apprise automatiquement (une pédale qui n'envoie que 2 à 116 atteint quand même exactement 0 et 100 %). Pour un potard sur un CC de 0 à 31, le CC n+32 est lu comme sa partie fine (14 bits).",
         "<b>Footswitch MIDI</b> : à accrochage (par défaut) ou momentané, clic droit &gt; Settings. <b>Program Change 1 à 10</b> : rappel des presets usine. Tous les paramètres sont aussi automatisables dans le DAW."],
  win_t="7. Fenêtre",
- win=["Screamer utilise le format pédale simple de NINE HANDS | DSP : la fenêtre montre la pédale seule, plein cadre (visuel de 965 × 1800), elle s'ouvre à 60 % et ne peut jamais être réduite en dessous. Clic droit &gt; <b>Plugin size</b> : <b>60 %</b>, <b>75 %</b> ou <b>100 %</b>, « (default) » indiquant la taille par défaut ; <b>Default size (new windows)</b> choisit la taille d'ouverture de toutes les nouvelles fenêtres de Screamer (réglage commun à toutes les instances) et redimensionne aussitôt la fenêtre courante. Vous pouvez aussi tirer le coin en bas à droite jusqu'à 150 % (les proportions sont conservées).",
+ win=["Screamer utilise le format pédale simple de NINE HANDS | DSP : la fenêtre montre la pédale seule, plein cadre (visuel de 1800 px de haut, largeur aux proportions de la pédale), elle s'ouvre à 60 % et ne peut jamais être réduite en dessous. Clic droit &gt; <b>Plugin size</b> : <b>60 %</b>, <b>75 %</b> ou <b>100 %</b>, « (default) » indiquant la taille par défaut ; <b>Default size (new windows)</b> choisit la taille d'ouverture de toutes les nouvelles fenêtres de Screamer (réglage commun à toutes les instances) et redimensionne aussitôt la fenêtre courante. Vous pouvez aussi tirer le coin en bas à droite jusqu'à 150 % (les proportions sont conservées).",
       "L'<b>écran</b> affiche le réglage du potard que vous venez de bouger (par ex. <i>DRIVE 64 %</i>) ; il apparaît quand un réglage bouge et s'efface au bout de 2,5 s. Il affiche aussi les messages du MIDI Learn. La <b>barre de presets</b> en dessous affiche en permanence le preset (ou <i>Edited</i>)."],
  bar_cap="Écran et barre de presets.",
  pre_t="8. Presets",
@@ -248,7 +248,7 @@ T = {
  fac_hdr=["PC", "Preset", "Drive / Tone / Level (%)", "Description"],
  tips_t="9. Conseils d'utilisation",
  tips=["Dans Reaper, placez Screamer <b>avant</b> votre simulateur d'ampli (par exemple avant Two Notes Genome), comme avec la vraie pédale.",
-       "L'usage le plus célèbre : <b>Drive bas, Level haut</b> devant un ampli déjà saturé (preset <i>Tight Boost</i>). La pédale resserre le grave et pousse les médiums, l'ampli fait la saturation. Idéal pour une 7 cordes en Sol ou des accordages plus bas.",
+       "L'usage le plus célèbre : <b>Drive bas, Level haut</b> devant un ampli déjà saturé (preset <i>Metal Boost</i>). La pédale resserre le grave et pousse les médiums, l'ampli fait la saturation. Idéal pour une 7 cordes en Sol ou des accordages plus bas.",
        "Devant un ampli clair, montez le Drive et gardez le Level vers midi : c'est une overdrive, pas une distorsion ; pour plus de gain, empilez-la avec un ampli crunch.",
        "Baissez le volume de la guitare pour éclaircir le son : l'écrêtage doux le suit de près."],
  tech_t="10. Caractéristiques techniques",
@@ -256,7 +256,7 @@ T = {
        ["Latence", "32 échantillons (filtre de sur-échantillonnage), annoncée au DAW"],
        ["Circuit", "tampon d'entrée (≈18 Hz), étage d'écrêtage (4,7 k + 47 nF, 51 k + Drive 500 k log, 51 pF, 2 × 1S1588), étage de tonalité (1 k / 220 nF, pot 20 k, 220 ohms + 220 nF, 1 k), Level 100 k log, tampon de sortie TS9"],
        ["Gain (médiums)", "environ +21 dB (Drive à 0) à +41 dB (Drive à 10), écrêtage doux par diodes"],
-       ["Level", "coupé à environ +15 dB ; midi ≈ niveau de la guitare avec Drive / Tone à midi"],
+       ["Level", "coupé à environ +15 dB ; midi ≈ niveau de la guitare avec Drive / Tone à midi ; pas de plafond à 0 dBFS (excursion de la pédale ±3,4 V)"],
        ["Traitement", "étage d'écrêtage résolu à chaque échantillon (trapèzes + Newton), sur-échantillonnage x4, étage de tonalité exact du 2e ordre (bilinéaire), paramètres lissés"],
        ["Processeur", "environ 5 à 10 % d'un cœur à 48 kHz (stéréo), selon l'ordinateur"],
        ["MIDI", "tous les canaux ; MIDI Learn sur les 4 commandes (rien d'assigné par défaut), CC 14 bits, Program Change 1-10"],

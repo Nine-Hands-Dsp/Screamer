@@ -12,7 +12,7 @@ static const ScreamerPreset factoryPresets[] =
     //  nom                          drive  tone  level
     { "Classic TS9",                 5.0f,  5.0f,  5.0f },   // tout a midi : le reglage de reference
     { "Texas Blues",                 2.5f,  6.0f,  7.5f },   // peu de drive, beaucoup de level : un ampli clair qui commence a craquer
-    { "Tight Boost (7 strings)",     0.0f,  6.5f,  8.5f },   // drive a zero, level haut : resserre le grave devant un ampli deja sature
+    { "Metal Boost (7 strings)",     0.0f,  6.0f, 10.0f },   // LE reglage metal : drive a 0, level a fond, tone vers 13 h, devant un ampli sature
     { "Edge of Breakup",             1.5f,  5.0f,  6.0f },   // crunch leger qui suit l'attaque
     { "Rhythm Crunch",               6.0f,  5.0f,  5.0f },
     { "Singing Lead",                8.5f,  6.0f,  5.5f },   // sustain, medium en avant

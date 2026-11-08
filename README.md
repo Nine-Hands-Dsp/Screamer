@@ -23,7 +23,7 @@ sous toutes les commandes et inscriptions, coupé aux bords du boîtier), pièce
 | Étage d'écrêtage | JRC4558 non inverseur ; vers la masse 4,7 k + 47 nF ; contre-réaction (51 k + DRIVE 500 k log) // 51 pF // 2 diodes 1S1588 tête-bêche | **Résolu à chaque échantillon** : intégration trapézoïdale des deux condensateurs + Newton sur l'équation de Shockley des diodes (Is 2,52 nA, n 1,752), sur-échantillonnage x4 (RIF Kaiser 128 points), sortie limitée en douceur par les rails du 4558 |
 | Bosse de médiums | Seules les fréquences > 720 Hz sont amplifiées ; sortie = signal propre + tension des diodes | Vient du modèle, rien d'ajouté : gain des médiums ≈ 12 (DRIVE 0) à ≈ 118 (DRIVE 10), grave à gain 1 |
 | TONE | 1 k / 220 nF (723 Hz) puis étage actif : pot 20 k entre les entrées + et −, 220 Ω + 220 nF au curseur, 10 k, 1 k | Fonction de transfert exacte du 2e ordre (analyse nodale), transformée bilinéaire pré-déformée à 1 kHz ; courbe du potard répartie pour un aigu régulier en dB (−18,6 → −2,5 dB à 4 kHz, mêmes extrêmes que la pédale) |
-| LEVEL | Pot 100 k log en diviseur | Courbe log 15 % à mi-course ; DRIVE / TONE / LEVEL à midi ≈ niveau de la guitare (0,1 – 0,15 V crête), +15 dB en haut ; limiteur de sécurité à 0 dBFS |
+| LEVEL | Pot 100 k log en diviseur | Courbe log 15 % à mi-course ; DRIVE / TONE / LEVEL à midi ≈ niveau de la guitare (0,1 – 0,15 V crête), +15 dB en haut ; **pas de plafond à 0 dBFS** (v1.3) : seul plafond, l'excursion des amplis op en 9 V (±3,4 V ≈ +10,6 dBFS), comme la pédale devant un ampli |
 | Sortie TS9 | 470 Ω / 100 k (TS808 : 100 Ω / 10 k) | Sans effet audible sur une entrée haute impédance : liaison seule |
 | Bypass | Bufferisé (JFET) | Signal sec aligné sur la latence (32 échantillons, annoncée au DAW), fondu de 3 ms |
 | Noise gate (ajout) | — | Clic droit > *Noise gate* : Off (défaut) / Light / Medium / Strong |
@@ -36,8 +36,8 @@ forums Seymour Duncan / PedalPCB pour les différences TS9 / TS808 (sortie 470 �
 
 ## Interface
 
-- **Visuel 965 × 1800 px** (`background.png`) : la pédale plein cadre, fond transparent seulement autour des jacks (règle des pédales simples NINE HANDS | DSP) ; la fenêtre montre la pédale seule.
-- Fenêtre ouverte à **493 px de haut** (264 × 493), impossible de la réduire en dessous, proportions bloquées, jusqu'à 150 %. Clic droit > *Plugin size* : 60 % / 75 % / 100 % ; *Default size (new windows)* pour la taille des nouvelles fenêtres.
+- **Visuel 1016 × 1800 px** (`background.png`, 1800 px de haut, largeur aux proportions de la pédale) : la pédale plein cadre, fond transparent seulement autour des jacks (règle des pédales simples NINE HANDS | DSP) ; la fenêtre montre la pédale seule.
+- Fenêtre ouverte à **493 px de haut** (278 × 493), impossible de la réduire en dessous, proportions bloquées, jusqu'à 150 %. Clic droit > *Plugin size* : 60 % / 75 % / 100 % ; *Default size (new windows)* pour la taille des nouvelles fenêtres.
 - **Écran d'état** (réglage en %, messages MIDI Learn) et **barre de presets** (flèches, menu) dessinés par le plugin, police Poppins.
 - Potards : photo du kit (`assets/kit/knob_photo.png`), seul le repère crème tourne ; double-clic = midi.
 - Footswitch du kit (référence Echoflex) : bascule à l'appui, bouton assombri tant qu'on appuie, reflet rouge de la LED sur l'écrou.
@@ -53,7 +53,7 @@ course apprise (2-116 → 0-100 %). Footswitch MIDI à accrochage ou momentané.
 
 ## Presets d'usine
 
-Classic TS9 · Texas Blues · Tight Boost (7 strings) · Edge of Breakup · Rhythm Crunch · Singing Lead · Warm & Round ·
+Classic TS9 · Texas Blues · Metal Boost (7 strings) · Edge of Breakup · Rhythm Crunch · Singing Lead · Warm & Round ·
 Bright Humbucker · Full Drive · Clean Mid Boost.
 
 ## Fichiers
@@ -66,6 +66,7 @@ Bright Humbucker · Full Drive · Clean Mid Boost.
 
 ## Versions
 
+- **1.3.0** (8 nov. 2026) : le plafond de sécurité à 0 dBFS est retiré : il écrasait le réglage metal (DRIVE 0, LEVEL à fond) dès 0,2 V de guitare ; seul reste l'excursion réelle des amplis op (±3,4 V). Preset 3 « Metal Boost (7 strings) » : DRIVE 0, TONE 13 h, LEVEL à fond. Image 1016 × 1800 aux proportions d'origine de la pédale (1800 px de haut, largeur homogène). Composants vérifiés avec les TS9 d'origine (JRC4558 / TA75558, diodes 1S1588, sortie 470 Ω / 100 k).
 - **1.2.0** (8 nov. 2026) : visuel 965 × 1800 px, pédale plein cadre, transparent seulement autour des jacks ; la fenêtre ne montre plus que la pédale (mêmes hauteurs : 493 / 719 / 958 px, jusqu'à 1437).
 - **1.1.0** (8 nov. 2026) : disposition des potards de la TS9, jacks, écran, presets et LED descendus, titre au milieu ; grand visage imprimé sur la coque ; moteur vérifié (gain 11,9 → 118, conforme à Electrosmash ; 1 kHz à ±0,05 dB de la formule à DRIVE 0) ; coefficients recalculés seulement quand un potard bouge.
 - **1.0.0** (8 nov. 2026) : première version.

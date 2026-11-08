@@ -494,16 +494,20 @@ namespace screamer
             }
         }
 
-        // calibrage : DRIVE / TONE / LEVEL a midi, guitare de 0,1 a 0,15 V crete -> niveau de la guitare seule (+-2 dB),
-        // comme une TS9 reglee « a l'unite » vers midi (tests/test_dsp.cpp)
+        // calibrage : DRIVE / TONE / LEVEL a midi, guitare de 0,1 a 0,15 V crete -> niveau de la guitare seule (+-2 dB) ;
+        // LEVEL a fond : +14 a +16 dB, pour pousser l'ampli (reglage metal « drive a 0, level a fond »)
         float outTrim = 2.0f;
 
     private:
+        // v1.3 : plus de plafond a 0 dBFS (il ecrasait le reglage metal LEVEL a fond devant l'ampli). Le seul plafond est
+        // celui de la pedale : l'excursion des amplis op et du tampon de sortie en 9 V, environ +-3,4 V (≈ +10,6 dBFS).
+        // Le moteur du DAW travaille en virgule flottante : un simulateur d'ampli place apres recoit le signal chaud du hardware.
         static inline float safety (float x) noexcept
         {
+            constexpr float knee = 3.0f, room = 0.4f;
             const float ax = std::abs (x);
-            if (ax < 0.95f) return x;
-            return std::copysign (0.95f + 0.05f * std::tanh ((ax - 0.95f) / 0.05f), x);
+            if (ax < knee) return x;
+            return std::copysign (knee + room * std::tanh ((ax - knee) / room), x);
         }
 
         float gateEnv = 0.0f, gateGain = 1.0f, gateRelEnv = 0.999f, gateAtt = 0.03f, gateRel = 0.0002f;
