@@ -6,10 +6,17 @@ Visuel original NINE HANDS | DSP généré par `tools/make_art.py` : disposition
 TONE plus petit au milieu), boîtier rouge sang de bœuf imprimé d'un grand visage qui crie (`design/source/portrait.svg`, encre noire,
 sous toutes les commandes et inscriptions, coupé aux bords du boîtier), pièces photo du kit maison ; il ne reprend pas l'habillage Ibanez.
 
+<p align="center">
+  <a href="https://github.com/Nine-Hands-Dsp/screamer/releases/latest/download/Screamer-VST3-Windows.zip"><img alt="Télécharger pour Windows" src="https://img.shields.io/badge/%E2%AC%87%20T%C3%A9l%C3%A9charger-Windows-0078D6?style=for-the-badge"></a>
+  <a href="https://github.com/Nine-Hands-Dsp/screamer/releases/latest/download/Screamer-VST3-macOS.zip"><img alt="Télécharger pour macOS" src="https://img.shields.io/badge/%E2%AC%87%20T%C3%A9l%C3%A9charger-macOS-111111?style=for-the-badge&logo=apple&logoColor=white"></a>
+  <br>
+  <a href="https://github.com/Nine-Hands-Dsp/screamer/releases/latest"><img alt="Dernière version" src="https://img.shields.io/github/v/release/Nine-Hands-Dsp/screamer?label=derni%C3%A8re%20version&color=b0141c"></a>
+</p>
+
 ## Installation via GitHub
 
-1. Le push sur `main` lance la compilation (onglet **Actions**) : Windows (`windows-2022`) et macOS.
-2. Télécharger l'artefact :
+1. Le push sur `main` lance la compilation (onglet **Actions**) : Windows (`windows-2022`) et macOS, puis publie la version en **Release** (`v<version>`) ; les boutons ci-dessus téléchargent toujours la dernière.
+2. Télécharger le zip (boutons ci-dessus, ou artefact de l'onglet Actions) :
    - **Windows** : copier `Screamer.vst3` dans `C:\Program Files\Common Files\VST3\`
    - **macOS** : dézipper puis copier `Screamer.vst3` dans `~/Library/Audio/Plug-Ins/VST3/`
      (premier lancement : `xattr -cr ~/Library/Audio/Plug-Ins/VST3/Screamer.vst3` si macOS le bloque)

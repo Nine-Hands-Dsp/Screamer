@@ -40,3 +40,37 @@ jobs:
           name: Screamer-VST3-macOS
           path: Screamer-VST3-macOS.zip
           if-no-files-found: error
+
+  # Publie la version (tag v<VERSION de CMakeLists>) en Release GitHub, fichiers a nom fixe :
+  # les liens .../releases/latest/download/Screamer-VST3-<OS>.zip du README suivent chaque version.
+  release:
+    if: github.ref == 'refs/heads/main'
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - name: Version
+        id: v
+        run: echo "version=$(sed -n 's/^project([A-Za-z0-9_]* VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: Archives
+        run: |
+          (cd dist/Screamer-VST3-Windows && zip -r -q "$GITHUB_WORKSPACE/Screamer-VST3-Windows.zip" Screamer.vst3)
+          cp dist/Screamer-VST3-macOS/Screamer-VST3-macOS.zip .
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v${{ steps.v.outputs.version }}"
+          FILES="Screamer-VST3-Windows.zip Screamer-VST3-macOS.zip"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" $FILES --clobber
+          else
+            gh release create "$TAG" $FILES --target "$GITHUB_SHA" --latest \
+              --title "Screamer $TAG" \
+              --notes "Windows : copier Screamer.vst3 dans C:\\Program Files\\Common Files\\VST3\\. macOS : copier Screamer.vst3 dans ~/Library/Audio/Plug-Ins/VST3/."
+          fi
