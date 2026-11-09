@@ -332,7 +332,7 @@ for side in (-1, 1):
     contact = cv2.GaussianBlur(occ, (0, 0), 3.0 * AS)        # taille des ombres doublee (nov. 2026)
     soft = cv2.GaussianBlur(occ, (0, 0), 18.0 * AS)
     occ = np.clip(contact * 0.9 + soft * 1.6, 0, 0.62)
-    occ *= 0.2 if side > 0 else 0.7                  # jack de droite (IN) -80 %, jack de gauche (OUT) -30 % (demande nov. 2026)
+    occ *= 0.2 if side > 0 else 0.0                  # jack de droite (IN) -80 %, jack de gauche (OUT) sans ombre (nov. 2026)
     img *= (1.0 - occ * body)[..., None]
     over(img, j, x0, y0)
     ja = np.zeros((H, W), np.float32)

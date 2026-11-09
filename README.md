@@ -51,7 +51,7 @@ forums Seymour Duncan / PedalPCB pour les différences TS9 / TS808 (sortie 470 �
 - Potards agrandis (v1.3.2) : photo du kit (`assets/kit/knob_photo.png`), seul le repère crème tourne ; double-clic = midi.
 - Footswitch du kit (référence Echoflex) : bascule à l'appui, bouton assombri tant qu'on appuie, reflet rouge de la LED sur l'écrou.
 - LED rouge (photo du kit, couleur d'origine), façade éclairée par un calque précalculé, fondu 0,45 / 0,28.
-- Jacks photo du kit affleurant les tranches (OUT à gauche, IN à droite), inscriptions IN / OUT à leur hauteur ; occlusion sur la coque autour des jacks, des potards, de la LED et du footswitch.
+- Jacks photo du kit affleurant les tranches (OUT à gauche, IN à droite), inscriptions IN / OUT à leur hauteur ; occlusion sur la coque autour du jack IN, des potards, de la LED et du footswitch.
 - **Anti-gel v2** : rendu logiciel forcé sous Windows, fenêtre opaque, timer 30 Hz qui ne redessine que ce qui change, caches reconstruits par le timer, chien de garde 1,5 s, jamais de `setSize` dans `resized()` ; côté audio, file vidée sur le thread de messages, paramètres lus par pointeurs. JUCE 8.0.15.
 
 ## MIDI
@@ -75,6 +75,7 @@ Bright Humbucker · Full Drive · Clean Mid Boost.
 
 ## Versions
 
+- **1.3.4** (9 nov. 2026) : plus d'ombre autour du jack OUT (gauche).
 - **1.3.3** (9 nov. 2026) : menus clic droit au design d'Octopus, ouverts à l'endroit du clic.
 - **1.3.2** (9 nov. 2026) : visuel 1235 × 1800 ; potards agrandis ; textes, graduations (toutes de même taille) et nouveau logo NINE HANDS | DSP dessinés en vectoriel ; fond net sur écrans haute densité ; traits du visage lissés ; jacks affleurant le boîtier ; occlusion autour des éléments en relief.
 - **1.3.1** (8 nov. 2026) : notice : conseils d'utilisation avec Ampire et Impulse (Two Notes Genome n'est plus utilisé).
