@@ -46,6 +46,7 @@ forums Seymour Duncan / PedalPCB pour les différences TS9 / TS808 (sortie 470 �
 - **Visuel 1235 × 1800 px** (`background.png`) : la pédale plein cadre, fond transparent seulement autour des jacks (règle des pédales simples NINE HANDS | DSP) ; la fenêtre montre la pédale seule.
 - **Sérigraphie vectorielle** : noms des potards, SCREAMER / OVERDRIVE, IN / OUT, graduations et logo NINE HANDS | DSP (`NineHandsLogo.svg`) sont dessinés par le plugin (Poppins), nets à toutes les tailles et sur les écrans haute densité ; le fond est mis en cache à la résolution physique de l'écran.
 - Fenêtre ouverte à **493 px de haut** (338 × 493), impossible de la réduire en dessous, proportions bloquées, jusqu'à 150 %. Clic droit > *Plugin size* : 60 % / 75 % / 100 % ; *Default size (new windows)* pour la taille des nouvelles fenêtres.
+- **Menus clic droit au design d'Octopus** (`NineHandsMenu.h` : fond sombre arrondi, icônes, coche bleue, chevrons des sous-menus), ouverts à l'endroit du clic ; le menu de presets s'ouvre sous sa barre.
 - **Écran d'état** (réglage en %, messages MIDI Learn) et **barre de presets** (flèches, menu) dessinés par le plugin, police Poppins.
 - Potards agrandis (v1.3.2) : photo du kit (`assets/kit/knob_photo.png`), seul le repère crème tourne ; double-clic = midi.
 - Footswitch du kit (référence Echoflex) : bascule à l'appui, bouton assombri tant qu'on appuie, reflet rouge de la LED sur l'écrou.
@@ -74,6 +75,7 @@ Bright Humbucker · Full Drive · Clean Mid Boost.
 
 ## Versions
 
+- **1.3.3** (9 nov. 2026) : menus clic droit au design d'Octopus, ouverts à l'endroit du clic.
 - **1.3.2** (9 nov. 2026) : visuel 1235 × 1800 ; potards agrandis ; textes, graduations (toutes de même taille) et nouveau logo NINE HANDS | DSP dessinés en vectoriel ; fond net sur écrans haute densité ; traits du visage lissés ; jacks affleurant le boîtier ; occlusion autour des éléments en relief.
 - **1.3.1** (8 nov. 2026) : notice : conseils d'utilisation avec Ampire et Impulse (Two Notes Genome n'est plus utilisé).
 - **1.3.0** (8 nov. 2026) : le plafond de sécurité à 0 dBFS est retiré : il écrasait le réglage metal (DRIVE 0, LEVEL à fond) dès 0,2 V de guitare ; seul reste l'excursion réelle des amplis op (±3,4 V). Preset 3 « Metal Boost (7 strings) » : DRIVE 0, TONE 13 h, LEVEL à fond. Image 1016 × 1800 aux proportions d'origine de la pédale (1800 px de haut, largeur homogène). Composants vérifiés avec les TS9 d'origine (JRC4558 / TA75558, diodes 1S1588, sortie 470 Ω / 100 k).

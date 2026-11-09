@@ -119,6 +119,8 @@ ScreamerAudioProcessorEditor::ScreamerAudioProcessorEditor (ScreamerAudioProcess
     if (auto xml = XmlDocument::parse (String::fromUTF8 (BinaryData::NineHandsLogo_svg, BinaryData::NineHandsLogo_svgSize)))
         logo = Drawable::createFromSVG (*xml);
     buildPrint();
+    menuLnf.reg = lightFace; menuLnf.med = labelFace; menuLnf.bold = boldFace;
+    setLookAndFeel (&menuLnf);             // menus (et sous-menus) au design d'Octopus
 
     // index des commandes = learnDef du processeur (0-2 potards, 3 footswitch)
     rightClickFwd.callback = [this] (Component* c)
@@ -172,6 +174,7 @@ ScreamerAudioProcessorEditor::~ScreamerAudioProcessorEditor()
 {
     stopTimer();
     for (auto& s : knobs) { s.removeMouseListener (&rightClickFwd); s.setLookAndFeel (nullptr); }
+    setLookAndFeel (nullptr);
 }
 
 //==============================================================================
@@ -547,6 +550,7 @@ void ScreamerAudioProcessorEditor::showPresetMenu()
     m.addSubMenu ("Load user preset", load);
     m.addSubMenu ("Save user preset", save);
 
+    m.setLookAndFeel (&menuLnf);
     m.showMenuAsync (PopupMenu::Options().withTargetScreenArea (localAreaToGlobal (scaled (presetRect))),
         [safe = Component::SafePointer<ScreamerAudioProcessorEditor> (this)] (int r)
         {
@@ -641,7 +645,8 @@ void ScreamerAudioProcessorEditor::showContextMenu (int learnIdx)
     menu.addSeparator();
     menu.addItem (999, "Screamer overdrive v" + String (JucePlugin_VersionString) + " - NINE HANDS | DSP", false);
 
-    menu.showMenuAsync (PopupMenu::Options().withTargetComponent (this),
+    menu.setLookAndFeel (&menuLnf);
+    menu.showMenuAsync (PopupMenu::Options().withMousePosition(),       // menu clic droit : toujours la ou l'on clique
         [safe = Component::SafePointer<ScreamerAudioProcessorEditor> (this)] (int r)
         {
             if (safe == nullptr || r == 0) return;

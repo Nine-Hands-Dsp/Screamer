@@ -3,6 +3,7 @@
 #include "PluginProcessor.h"
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "Layout.h"
+#include "NineHandsMenu.h"
 
 //==============================================================================
 // Potards (photo du kit, dans le fond : reflets fixes) ; seul le repere creme peint tourne.
@@ -107,6 +108,7 @@ private:
     void* lastPeer = nullptr;
     double lastPaintMs = 0.0, repaintAskedMs = 0.0, lastScaleCheckMs = 0.0, lastRendererCheckMs = 0.0;
     juce::Typeface::Ptr labelFace, boldFace, lightFace;
+    NineHandsMenu::MenuLnf menuLnf;        // menus clic droit au design d'Octopus
     juce::Path printPath;                  // textes + graduations + filets, en unites du plugin
     std::unique_ptr<juce::Drawable> logo;
 

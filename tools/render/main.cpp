@@ -1,6 +1,7 @@
 // Captures PNG de la fenetre reelle de Screamer (meme code que le plugin), pour l'apercu et la notice.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "BinaryData.h"
 using namespace juce;
 int main (int argc, char** argv)
 {
@@ -46,6 +47,36 @@ int main (int argc, char** argv)
         pump (140);
         auto img = ed->createComponentSnapshot (ed->getLocalBounds(), true, 1800.0f / (float) ed->getHeight());
         File f (out + "/screamer_exact.png"); f.deleteFile();
+        FileOutputStream os (f); PNGImageFormat().writeImageToStream (img, os);
+        std::printf ("%s (%d x %d)\n", f.getFullPathName().toRawUTF8(), img.getWidth(), img.getHeight());
+    }
+
+    // capture du menu clic droit (meme LookAndFeel que le plugin : design des menus d'Octopus)
+    {
+        NineHandsMenu::MenuLnf lf;
+        lf.med  = Typeface::createSystemTypefaceFor (BinaryData::PoppinsMedium_ttf, BinaryData::PoppinsMedium_ttfSize);
+        lf.bold = Typeface::createSystemTypefaceFor (BinaryData::PoppinsBold_ttf, BinaryData::PoppinsBold_ttfSize);
+        lf.reg  = Typeface::createSystemTypefaceFor (BinaryData::PoppinsLight_ttf, BinaryData::PoppinsLight_ttfSize);
+        struct It { const char* t; bool sep, sub, act, tick; };
+        const It items[] = { { "MIDI Learn: Drive (\xe2\x80\x94)", 0, 0, 1, 0 }, { "Clear MIDI: Drive", 0, 0, 0, 0 }, { "", 1, 0, 1, 0 },
+                             { "Plugin size", 0, 1, 1, 0 }, { "", 1, 0, 1, 0 }, { "Factory presets", 0, 1, 1, 0 }, { "Load user preset", 0, 1, 1, 0 },
+                             { "Save user preset", 0, 1, 1, 0 }, { "", 1, 0, 1, 0 }, { "Noise gate", 0, 1, 1, 0 }, { "Settings", 0, 1, 1, 0 },
+                             { "MIDI", 0, 1, 1, 0 }, { "", 1, 0, 1, 0 }, { "Screamer overdrive v" JucePlugin_VersionString " - NINE HANDS | DSP", 0, 0, 0, 0 } };
+        int w = 0, h = 0;
+        for (auto& i : items) { int iw, ih; lf.getIdealPopupMenuItemSize (String::fromUTF8 (i.t), i.sep, 32, iw, ih); w = jmax (w, iw); h += ih; }
+        const int bd = lf.getPopupMenuBorderSize(); w += 2 * bd; h += 2 * bd;
+        const float sc = 2.0f;
+        Image img (Image::ARGB, roundToInt (w * sc), roundToInt (h * sc), true);
+        Graphics g (img); g.addTransform (AffineTransform::scale (sc));
+        lf.drawPopupMenuBackground (g, w, h);
+        int y = bd; int k = 0;
+        for (auto& i : items)
+        {
+            int iw, ih; lf.getIdealPopupMenuItemSize (String::fromUTF8 (i.t), i.sep, 32, iw, ih);
+            lf.drawPopupMenuItem (g, { bd, y, w - 2 * bd, ih }, i.sep, i.act, k == 5, i.tick, i.sub, String::fromUTF8 (i.t), {}, nullptr, nullptr);
+            y += ih; ++k;
+        }
+        File f (out + "/screamer_menu.png"); f.deleteFile();
         FileOutputStream os (f); PNGImageFormat().writeImageToStream (img, os);
         std::printf ("%s (%d x %d)\n", f.getFullPathName().toRawUTF8(), img.getWidth(), img.getHeight());
     }
