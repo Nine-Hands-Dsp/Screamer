@@ -72,12 +72,12 @@ Bright Humbucker · Full Drive · Clean Mid Boost.
 - `ScreamerDSP.h` : moteur audio sans JUCE ; `PluginProcessor.*`, `PluginEditor.*` ; `Layout.h` généré.
 - `tools/make_art.py` (+ `tools/photo_controls.py`) : visuel, calques, `Layout.h`.
 - `tools/render` : compile la vraie fenêtre sous Linux et exporte les captures (`design/renders`).
-- `tools/manual.py` : notice bilingue `docs/Screamer_Manual_EN-FR_v1.3.2.pdf` (repères lus dans `tools/layout.json`).
+- `tools/manual.py` : notice en français `docs/Screamer_Notice_FR_v1.3.5.pdf` (couverture minimale commune, repères lus dans `tools/layout.json`).
 - `tests/verify.cpp` : vérification du moteur contre les valeurs publiées (gain de l'étage d'écrêtage modèle / formule, repliement, bypass, fréquences d'échantillonnage, signaux extrêmes).
 
 ## Versions
 
-- **1.3.5** (10 nov. 2026) : barre de presets et ligne d'état réunies dans une seule pastille (fondu croisé).
+- **1.3.5** (10 nov. 2026) : barre de presets et ligne d'état réunies dans une seule pastille (fondu croisé) ; notice refaite en français seulement, avec la couverture minimale.
 - **1.3.4** (9 nov. 2026) : plus d'ombre autour du jack OUT (gauche).
 - **1.3.3** (9 nov. 2026) : menus clic droit au design d'Octopus, ouverts à l'endroit du clic.
 - **1.3.2** (9 nov. 2026) : visuel 1235 × 1800 ; potards agrandis ; textes, graduations (toutes de même taille) et nouveau logo NINE HANDS | DSP dessinés en vectoriel ; fond net sur écrans haute densité ; traits du visage lissés ; jacks affleurant le boîtier ; occlusion autour des éléments en relief.
