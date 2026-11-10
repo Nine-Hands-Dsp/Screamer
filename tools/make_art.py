@@ -54,8 +54,8 @@ KX = PW / 460.0                                  # largeur du boitier / boitier 
 KNOBS = [(CX - 122.0 * KX, 172.0, 'DRIVE', KNOB_R), (CX, 296.0, 'TONE', TONE_R), (CX + 122.0 * KX, 172.0, 'LEVEL', KNOB_R)]
 TITLE_Y = 462.0                                   # titre au milieu de la pedale (bloc titre + sous-titre centre sur 479)
 SUB_Y = 514.0
-STATUS = (CX - 175.0 * KX, 552.0, 350.0 * KX, 56.0)       # ecran d'etat (dessine par le plugin)
-PRESET = (CX - 175.0 * KX, 620.0, 350.0 * KX, 36.0)       # barre de presets (dessinee par le plugin)
+PRESET = (CX - 175.0 * KX, 588.0, 350.0 * KX, 44.0)       # pastille unique : barre de presets au repos, ligne d'etat pendant les reglages
+STATUS = PRESET                                             # (regle NINE HANDS | DSP : meme endroit, fondu croise)
 LED = (CX, 708.0)
 FS = (CX, 804.0)
 LOGO_C = (CX, 896.0)
@@ -394,7 +394,7 @@ with open(os.path.join(ROOT, 'Layout.h'), 'w') as fo:
     fo.write(f"    const juce::Rectangle<float> glowRect {RC(GLR)};\n")
     fo.write(f"    const juce::Point<float> fsPos {PT(FS)}; const float footR = {f(FS_BTN * SC)}, fsS = {f(FS_W * SC)};   // bouton / sprite\n")
     fo.write(f"    const juce::Rectangle<float> statusRect {RC(STATUS)}, presetRect {RC(PRESET)};\n")
-    fo.write(f"    const float statusFont = {f(28.0 * SC)}, presetFont = {f(21.0 * SC)};\n")
+    fo.write(f"    const float statusFont = {f(22.0 * SC)}, presetFont = {f(22.0 * SC)};\n")
     fo.write(f"    const juce::Rectangle<float> boxRect {RC((PX0, PY0, PW, PH))};   // boitier\n")
     fo.write(f"    const float jackY = {f(Y(JACK_Y))};\n")
     fo.write("    // serigraphie vectorielle : texte, police (0 medium, 1 bold, 2 light), taille em, espacement, centre, rotation (degres)\n")

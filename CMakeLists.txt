@@ -6,7 +6,7 @@ if(APPLE)
   set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "" FORCE)
 endif()
 
-project(Screamer VERSION 1.3.4)
+project(Screamer VERSION 1.3.5)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -39,7 +39,7 @@ juce_add_plugin(Screamer
   FORMATS VST3
   VST3_CATEGORIES Fx Distortion
   PRODUCT_NAME "Screamer"
-  VERSION 1.3.4
+  VERSION 1.3.5
   DESCRIPTION "Overdrive (Ibanez TS9 Tube Screamer circuit model) - single pedal format"
   IS_SYNTH FALSE
   NEEDS_MIDI_INPUT TRUE

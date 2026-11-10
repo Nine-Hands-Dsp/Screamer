@@ -93,7 +93,6 @@ private:
     void drawPrint (juce::Graphics&);   // serigraphie vectorielle (textes, graduations, filets, logo)
     void buildPrint();
     void drawLed (juce::Graphics&);
-    void drawStatus (juce::Graphics&);
     void drawPresetBar (juce::Graphics&);
 
     ScreamerAudioProcessor& proc;

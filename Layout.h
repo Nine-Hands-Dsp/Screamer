@@ -10,8 +10,8 @@ namespace layout
     const juce::Point<float> ledPos { 308.75f, 681.57f }; const float ledS = 30.34f;
     const juce::Rectangle<float> glowRect { 197.51f, 570.34f, 222.47f, 222.47f };
     const juce::Point<float> fsPos { 308.75f, 778.65f }; const float footR = 38.31f, fsS = 192.13f;   // bouton / sprite
-    const juce::Rectangle<float> statusRect { 90.18f, 523.82f, 437.14f, 56.63f }, presetRect { 90.18f, 592.58f, 437.14f, 36.40f };
-    const float statusFont = 28.31f, presetFont = 21.24f;
+    const juce::Rectangle<float> statusRect { 90.18f, 560.22f, 437.14f, 44.49f }, presetRect { 90.18f, 560.22f, 437.14f, 44.49f };
+    const float statusFont = 22.25f, presetFont = 22.25f;
     const juce::Rectangle<float> boxRect { 21.49f, 0.00f, 574.52f, 900.00f };   // boitier
     const float jackY = 558.00f;
     // serigraphie vectorielle : texte, police (0 medium, 1 bold, 2 light), taille em, espacement, centre, rotation (degres)

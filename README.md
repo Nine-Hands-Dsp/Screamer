@@ -49,7 +49,7 @@ forums Seymour Duncan / PedalPCB pour les différences TS9 / TS808 (sortie 470 �
 - **Sérigraphie vectorielle** : noms des potards, SCREAMER / OVERDRIVE, IN / OUT, graduations et logo NINE HANDS | DSP (`NineHandsLogo.svg`) sont dessinés par le plugin (Poppins), nets à toutes les tailles et sur les écrans haute densité ; le fond est mis en cache à la résolution physique de l'écran.
 - Fenêtre ouverte à **493 px de haut** (338 × 493), impossible de la réduire en dessous, proportions bloquées, jusqu'à 150 %. Clic droit > *Plugin size* : 60 % / 75 % / 100 % ; *Default size (new windows)* pour la taille des nouvelles fenêtres.
 - **Menus clic droit au design d'Octopus** (`NineHandsMenu.h` : fond sombre arrondi, icônes, coche bleue, chevrons des sous-menus), ouverts à l'endroit du clic ; le menu de presets s'ouvre sous sa barre.
-- **Écran d'état** (réglage en %, messages MIDI Learn) et **barre de presets** (flèches, menu) dessinés par le plugin, police Poppins.
+- **Barre de presets et ligne d'état au même endroit** : une seule pastille. Au repos, la barre de presets (◀ nom ▶, clic = menu) ; dès qu'un réglage bouge (souris, molette, automation, MIDI), la ligne d'état prend sa place en fondu (réglage en %, messages MIDI Learn), puis s'efface 2,5 s après le dernier mouvement. Un clic sur la pastille fait revenir les presets. Police Poppins, dessinée par le plugin.
 - Potards agrandis (v1.3.2) : photo du kit (`assets/kit/knob_photo.png`), seul le repère crème tourne ; double-clic = midi.
 - Footswitch du kit (référence Echoflex) : bascule à l'appui, bouton assombri tant qu'on appuie, reflet rouge de la LED sur l'écrou.
 - LED rouge (photo du kit, couleur d'origine), façade éclairée par un calque précalculé, fondu 0,45 / 0,28.
@@ -77,6 +77,7 @@ Bright Humbucker · Full Drive · Clean Mid Boost.
 
 ## Versions
 
+- **1.3.5** (10 nov. 2026) : barre de presets et ligne d'état réunies dans une seule pastille (fondu croisé).
 - **1.3.4** (9 nov. 2026) : plus d'ombre autour du jack OUT (gauche).
 - **1.3.3** (9 nov. 2026) : menus clic droit au design d'Octopus, ouverts à l'endroit du clic.
 - **1.3.2** (9 nov. 2026) : visuel 1235 × 1800 ; potards agrandis ; textes, graduations (toutes de même taille) et nouveau logo NINE HANDS | DSP dessinés en vectoriel ; fond net sur écrans haute densité ; traits du visage lissés ; jacks affleurant le boîtier ; occlusion autour des éléments en relief.

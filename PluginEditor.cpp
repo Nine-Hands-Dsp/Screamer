@@ -8,7 +8,6 @@ using namespace juce;
 namespace
 {
     // repere 760 x 958 (fond 2x), positions generees par tools/make_art.py dans Layout.h
-    const Rectangle<float> statusRect = layout::statusRect;
     const Rectangle<float> presetRect = layout::presetRect;
 
     const float rotStart = MathConstants<float>::pi * (7.0f / 6.0f);    // -150 degres (7 h)
@@ -341,7 +340,7 @@ void ScreamerAudioProcessorEditor::timerCallback()
     if (midiFlash > 0) --midiFlash;
 
     const float target = now < statusUntil ? 1.0f : 0.0f;
-    statusAlpha += (target - statusAlpha) * (target > statusAlpha ? 0.45f : 0.12f);
+    statusAlpha += (target - statusAlpha) * (target > statusAlpha ? 0.45f : 0.25f);   // ~120 ms a l'apparition, ~300 ms au retour
     if (statusAlpha < 0.005f) statusAlpha = 0.0f;
     if (statusAlpha > 0.995f) statusAlpha = 1.0f;
 
@@ -364,7 +363,7 @@ void ScreamerAudioProcessorEditor::timerCallback()
     if (std::abs (statusAlpha - drawnStatus) > 0.003f || (statusAlpha > 0.0f && textChanged))
     {
         drawnStatus = statusAlpha;
-        askRepaint (scaled (statusRect.expanded (4.0f)));
+        askRepaint (scaled (presetRect.expanded (3.0f)));
     }
     if (pl != lastPreset || hoverZone != drawnHover || midiFlash > 0)
     {
@@ -393,41 +392,41 @@ void ScreamerAudioProcessorEditor::drawLed (Graphics& g)
     g.fillEllipse (c.x - hr, c.y - hr, hr * 2.0f, hr * 2.0f);
 }
 
-void ScreamerAudioProcessorEditor::drawStatus (Graphics& g)
-{
-    const float a = statusAlpha;
-    if (a <= 0.0f) return;
-    g.setColour (panel.withAlpha (0.92f * a));
-    g.fillRoundedRectangle (statusRect, 10.0f);
-    g.setColour (accent.withAlpha (0.45f * a));
-    g.drawRoundedRectangle (statusRect.reduced (0.75f), 10.0f, 1.4f);
-    const bool longLine = lastLine1.length() > 20;
-    g.setFont (Font (FontOptions (labelFace).withHeight (longLine ? layout::statusFont * 0.66f : layout::statusFont)));
-    g.setColour (inkCream.withAlpha (a));
-    g.drawFittedText (lastLine1.toUpperCase(), statusRect.reduced (12.0f, 0.0f).toNearestInt(), Justification::centred, longLine ? 2 : 1, 0.75f);
-}
 
+// Pastille unique (regle NINE HANDS | DSP) : barre de presets au repos ; des qu'un reglage bouge, la ligne d'etat
+// prend sa place en fondu croise (meme pastille, meme police, aucun saut), puis s'efface ~2,5 s apres le dernier mouvement.
 void ScreamerAudioProcessorEditor::drawPresetBar (Graphics& g)
 {
     const auto r = presetRect;
+    const float a = statusAlpha, pa = 1.0f - a;
     g.setColour (panel.withAlpha (0.80f));
     g.fillRoundedRectangle (r, r.getHeight() * 0.5f);
-    g.setColour (inkCream.withAlpha (hoverZone != 0 ? 0.55f : 0.28f));
+    g.setColour (inkCream.withAlpha ((hoverZone != 0 ? 0.55f : 0.28f) * pa + 0.40f * a));
     g.drawRoundedRectangle (r.reduced (0.6f), r.getHeight() * 0.5f, 1.2f);
+    const Font f (FontOptions (labelFace).withHeight (layout::presetFont));
     const float aw = 34.0f;
-    auto arrow = [&] (Rectangle<float> ar, bool left, bool hot)
+    if (pa > 0.0f)
     {
-        Path p; const auto c = ar.getCentre(); const float s = 6.0f;
-        if (left) p.addTriangle (c.x + s * 0.6f, c.y - s, c.x + s * 0.6f, c.y + s, c.x - s * 0.8f, c.y);
-        else      p.addTriangle (c.x - s * 0.6f, c.y - s, c.x - s * 0.6f, c.y + s, c.x + s * 0.8f, c.y);
-        g.setColour (inkCream.withAlpha (hot ? 1.0f : 0.6f));
-        g.fillPath (p);
-    };
-    arrow (r.withWidth (aw), true, hoverZone == 1);
-    arrow (r.withTrimmedLeft (r.getWidth() - aw), false, hoverZone == 3);
-    g.setFont (Font (FontOptions (labelFace).withHeight (layout::presetFont)));
-    g.setColour ((midiFlash > 0 ? Colour (0xffff8a70) : inkCream).withAlpha (hoverZone == 2 ? 1.0f : 0.9f));
-    g.drawFittedText (lastPreset, r.reduced (aw, 0.0f).toNearestInt(), Justification::centred, 1, 0.7f);
+        auto arrow = [&] (Rectangle<float> ar, bool left, bool hot)
+        {
+            Path p; const auto c = ar.getCentre(); const float sz = 6.0f;
+            if (left) p.addTriangle (c.x + sz * 0.6f, c.y - sz, c.x + sz * 0.6f, c.y + sz, c.x - sz * 0.8f, c.y);
+            else      p.addTriangle (c.x - sz * 0.6f, c.y - sz, c.x - sz * 0.6f, c.y + sz, c.x + sz * 0.8f, c.y);
+            g.setColour (inkCream.withAlpha ((hot ? 1.0f : 0.6f) * pa));
+            g.fillPath (p);
+        };
+        arrow (r.withWidth (aw), true, hoverZone == 1);
+        arrow (r.withTrimmedLeft (r.getWidth() - aw), false, hoverZone == 3);
+        g.setFont (f);
+        g.setColour ((midiFlash > 0 ? Colour (0xffff8a70) : inkCream).withAlpha ((hoverZone == 2 ? 1.0f : 0.9f) * pa));
+        g.drawFittedText (lastPreset, r.reduced (aw, 0.0f).toNearestInt(), Justification::centred, 1, 0.7f);
+    }
+    if (a > 0.0f)
+    {
+        g.setFont (f);
+        g.setColour ((midiFlash > 0 ? Colour (0xffff8a70) : inkCream).withAlpha (a));
+        g.drawFittedText (lastLine1.toUpperCase(), r.reduced (18.0f, 0.0f).toNearestInt(), Justification::centred, 1, 0.6f);
+    }
 }
 
 //==============================================================================
@@ -488,7 +487,6 @@ void ScreamerAudioProcessorEditor::paint (Graphics& g)
     g.setImageResamplingQuality (Graphics::mediumResamplingQuality);
     drawPrint (g);
     drawLed (g);
-    drawStatus (g);
     drawPresetBar (g);
 }
 
@@ -516,6 +514,8 @@ void ScreamerAudioProcessorEditor::mouseDown (const MouseEvent& e)
 {
     if (e.mods.isPopupMenu()) { showContextMenu(); return; }
     const float s = (float) getHeight() / baseH;
+    if (presetRect.contains (e.position / s) && statusAlpha > 0.0f)
+        { statusUntil = 0.0; learnLineUntil = 0.0; }        // la ligne d'etat ne bloque pas : la barre de presets revient
     switch (presetZoneAt (e.position / s))
     {
         case 1: stepPreset (-1); break;
