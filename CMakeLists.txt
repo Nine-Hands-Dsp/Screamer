@@ -6,7 +6,7 @@ if(APPLE)
   set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "" FORCE)
 endif()
 
-project(Screamer VERSION 1.3.5)
+project(Screamer VERSION 1.4.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -39,7 +39,7 @@ juce_add_plugin(Screamer
   FORMATS VST3
   VST3_CATEGORIES Fx Distortion
   PRODUCT_NAME "Screamer"
-  VERSION 1.3.5
+  VERSION 1.4.0
   DESCRIPTION "Overdrive (Ibanez TS9 Tube Screamer circuit model) - single pedal format"
   IS_SYNTH FALSE
   NEEDS_MIDI_INPUT TRUE
@@ -50,6 +50,17 @@ juce_add_plugin(Screamer
 
 target_sources(Screamer PRIVATE PluginProcessor.cpp PluginEditor.cpp)
 
+
+# verrou de taille de la fenetre du DAW (jamais sous 60 %, jamais au-dela de 150 %)
+if(APPLE)
+  target_sources(Screamer PRIVATE WindowMinSize.mm)
+  target_link_libraries(Screamer PRIVATE "-framework Cocoa")
+else()
+  target_sources(Screamer PRIVATE WindowMinSize.cpp)
+endif()
+if(WIN32)
+  target_link_libraries(Screamer PRIVATE comctl32 user32)
+endif()
 if(MSVC)
   target_compile_options(Screamer PRIVATE /utf-8)
 endif()

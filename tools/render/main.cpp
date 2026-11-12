@@ -54,9 +54,9 @@ int main (int argc, char** argv)
     // capture du menu clic droit (meme LookAndFeel que le plugin : design des menus d'Octopus)
     {
         NineHandsMenu::MenuLnf lf;
-        lf.med  = Typeface::createSystemTypefaceFor (BinaryData::PoppinsMedium_ttf, BinaryData::PoppinsMedium_ttfSize);
-        lf.bold = Typeface::createSystemTypefaceFor (BinaryData::PoppinsBold_ttf, BinaryData::PoppinsBold_ttfSize);
-        lf.reg  = Typeface::createSystemTypefaceFor (BinaryData::PoppinsLight_ttf, BinaryData::PoppinsLight_ttfSize);
+        lf.f.med  = Typeface::createSystemTypefaceFor (BinaryData::PoppinsMedium_ttf, BinaryData::PoppinsMedium_ttfSize);
+        lf.f.bold = Typeface::createSystemTypefaceFor (BinaryData::PoppinsBold_ttf, BinaryData::PoppinsBold_ttfSize);
+        lf.f.reg  = Typeface::createSystemTypefaceFor (BinaryData::PoppinsLight_ttf, BinaryData::PoppinsLight_ttfSize);
         struct It { const char* t; bool sep, sub, act, tick; };
         const It items[] = { { "MIDI Learn: Drive (\xe2\x80\x94)", 0, 0, 1, 0 }, { "Clear MIDI: Drive", 0, 0, 0, 0 }, { "", 1, 0, 1, 0 },
                              { "Plugin size", 0, 1, 1, 0 }, { "", 1, 0, 1, 0 }, { "Factory presets", 0, 1, 1, 0 }, { "Load user preset", 0, 1, 1, 0 },

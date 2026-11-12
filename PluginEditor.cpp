@@ -118,7 +118,8 @@ ScreamerAudioProcessorEditor::ScreamerAudioProcessorEditor (ScreamerAudioProcess
     if (auto xml = XmlDocument::parse (String::fromUTF8 (BinaryData::NineHandsLogo_svg, BinaryData::NineHandsLogo_svgSize)))
         logo = Drawable::createFromSVG (*xml);
     buildPrint();
-    menuLnf.reg = lightFace; menuLnf.med = labelFace; menuLnf.bold = boldFace;
+    menuLnf.f = { lightFace, labelFace, boldFace };
+    glowPc = NineHandsGlow::percent (JucePlugin_Name);
     setLookAndFeel (&menuLnf);             // menus (et sous-menus) au design d'Octopus
 
     // index des commandes = learnDef du processeur (0-2 potards, 3 footswitch)
@@ -159,12 +160,13 @@ ScreamerAudioProcessorEditor::ScreamerAudioProcessorEditor (ScreamerAudioProcess
     const int defaultW = roundToInt ((float) defaultH * baseW / baseH);
     setResizable (true, true);
     setResizeLimits (defaultW, defaultH, roundToInt ((float) maxH * baseW / baseH), maxH);
+    hostLock.setLimits (defaultW, defaultH, roundToInt ((float) maxH * baseW / baseH), maxH);
     if (auto* cons = getConstrainer())
         cons->setFixedAspectRatio ((double) baseW / (double) baseH);
     setOpaque (true);                      // anti-gel : l'hote ne redessine jamais ce qui est derriere la fenetre
     setSize (defaultW, defaultH);
     // taille des nouvelles fenetres : celle choisie dans le menu « Default size (new windows) »
-    setScaledHeight (sizeHeight (WigaWindowSize::defaultIndex (JucePlugin_Name, numSizes)));
+    setScaledHeight (sizeHeight (NineHandsWindow::openIndex (JucePlugin_Name, proc.uiSizeIdx.load(), numSizes)));   // taille du projet, sinon taille par defaut
     rebuildCaches();
     startTimerHz (30);
 }
@@ -187,6 +189,7 @@ void ScreamerAudioProcessorEditor::setScaledHeight (int h)
 {
     h = jlimit ((int) defaultH, (int) maxH, h);
     setSize (roundToInt ((float) h * baseW / baseH), h);
+    hostLock.enforce();
 }
 
 Rectangle<int> ScreamerAudioProcessorEditor::scaled (Rectangle<float> r) const
@@ -256,7 +259,7 @@ void ScreamerAudioProcessorEditor::useSoftwareRenderer()
    #endif
 }
 
-void ScreamerAudioProcessorEditor::parentHierarchyChanged() { useSoftwareRenderer(); }
+void ScreamerAudioProcessorEditor::parentHierarchyChanged() { useSoftwareRenderer(); hostLock.track (*this); }
 void ScreamerAudioProcessorEditor::visibilityChanged()      { useSoftwareRenderer(); if (isShowing()) repaint(); }
 
 void ScreamerAudioProcessorEditor::askRepaint (Rectangle<int> r)
@@ -293,6 +296,7 @@ void ScreamerAudioProcessorEditor::timerCallback()
 {
     const double now = Time::getMillisecondCounterHiRes();
     if (getPeer() != lastPeer || now - lastRendererCheckMs > 1000.0) { lastRendererCheckMs = now; useSoftwareRenderer(); }
+    hostLock.track (*this);
 
     if (resizeSettle > 0 && --resizeSettle == 0) rebuildCaches();
     else if (resizeSettle == 0 && now - lastScaleCheckMs > 250.0)
@@ -344,6 +348,14 @@ void ScreamerAudioProcessorEditor::timerCallback()
     if (statusAlpha < 0.005f) statusAlpha = 0.0f;
     if (statusAlpha > 0.995f) statusAlpha = 1.0f;
 
+    // clic droit > Glow intensity : reglage commun a toutes les fenetres, relu toutes les 3 s (jamais dans paint)
+    if (now - lastGlowReadMs > 3000.0)
+    {
+        lastGlowReadMs = now;
+        const int pc = NineHandsGlow::percent (JucePlugin_Name);
+        if (pc != glowPc) setGlowPercent (pc);
+    }
+
     // LED rouge = effet actif ; fondu 0,45 a l'allumage / 0,28 a l'extinction
     const bool on = proc.rawAt (ScreamerAudioProcessor::rActive) > 0.5f;
     ledLevel += ((on ? 1.0f : 0.0f) - ledLevel) * (on ? 0.45f : 0.28f);
@@ -352,7 +364,7 @@ void ScreamerAudioProcessorEditor::timerCallback()
     if (std::abs (ledLevel - drawnLed) > 0.004f)
     {
         drawnLed = ledLevel;
-        footswitch.ledLevel = ledLevel;
+        footswitch.ledLevel = ledLevel * glowAmt();
         askRepaint (scaled (layout::glowRect));
         footswitch.repaint();
     }
@@ -378,7 +390,7 @@ void ScreamerAudioProcessorEditor::drawLed (Graphics& g)
     const float level = ledLevel;
     if (level <= 0.003f) return;
     // la facade recoit la lumiere de la LED (calque alpha precalcule : seule la lumiere ajoutee)
-    if (glowS.isValid()) { g.setOpacity (level); g.drawImage (glowS, layout::glowRect); }
+    if (glowS.isValid()) { g.setOpacity (level * glowAmt()); g.drawImage (glowS, layout::glowRect); }   // halo (clic droit > Glow intensity)
     // lentille allumee (photo de LED rouge du kit)
     const auto c = layout::ledPos;
     const float hs = layout::ledS * 0.5f;
@@ -386,8 +398,8 @@ void ScreamerAudioProcessorEditor::drawLed (Graphics& g)
     g.setOpacity (1.0f);
     // tres leger halo optique autour de la lentille
     const float hr = 20.0f;
-    ColourGradient halo (accent.withAlpha (0.30f * level), c.x, c.y, accent.withAlpha (0.0f), c.x + hr, c.y, true);
-    halo.addColour (0.4, accent.withAlpha (0.08f * level));
+    ColourGradient halo (accent.withAlpha (0.30f * level * glowAmt()), c.x, c.y, accent.withAlpha (0.0f), c.x + hr, c.y, true);
+    halo.addColour (0.4, accent.withAlpha (0.08f * level * glowAmt()));
     g.setGradientFill (halo);
     g.fillEllipse (c.x - hr, c.y - hr, hr * 2.0f, hr * 2.0f);
 }
@@ -571,41 +583,35 @@ void ScreamerAudioProcessorEditor::handleMidiMenu (int r)
     else if (r == 1201) { proc.learnTarget.store (-1); proc.resetMidiMap(); }
 }
 
-void ScreamerAudioProcessorEditor::showContextMenu (int learnIdx)
+void ScreamerAudioProcessorEditor::setGlowPercent (int pc)
 {
+    glowPc = NineHandsGlow::sanitize (pc);
+    drawnLed = -1.0f;                       // le timer redessine la LED et le reflet du footswitch
+}
+
+PopupMenu ScreamerAudioProcessorEditor::buildContextMenu (int learnIdx)
+{
+    using namespace NineHandsMenu;
     PopupMenu menu;
+    menu.setLookAndFeel (&menuLnf);
     auto ccText = [this] (int i)
     {
         const int cc = proc.ccMap[i].load();
-        return cc >= 0 ? "CC " + String (cc) : String (CharPointer_UTF8 ("\xe2\x80\x94"));
+        return cc >= 0 ? "CC " + String (cc) : String ("not assigned");
     };
     const int lt = proc.learnTarget.load();
     if (learnIdx >= 0)
     {
+        // menu d'une commande (tronc commun) : en-tete, MIDI Learn, Clear MIDI, Cancel MIDI learn
         const String name = ScreamerAudioProcessor::learnDef (learnIdx).name;
-        menu.addItem (1000 + learnIdx, "MIDI Learn: " + name + " (" + ccText (learnIdx) + ")", true, lt == learnIdx);
+        addHeader (menu, menuLnf.f, learnIdx < 3 ? icoKnob : icoPedal, accent, name, "MIDI: " + ccText (learnIdx));
+        menu.addItem (1000 + learnIdx, "MIDI Learn: " + name, true, lt == learnIdx);
         menu.addItem (1100 + learnIdx, "Clear MIDI: " + name, proc.ccMap[learnIdx].load() >= 0);
-        if (lt >= 0) menu.addItem (1200, "Cancel MIDI learn");
-        menu.addSeparator();
+        menu.addItem (1200, "Cancel MIDI learn", lt >= 0);
+        return menu;
     }
 
-    PopupMenu sizes;
-    {
-        // Plugin size : taille de cette fenetre + taille par defaut des nouvelles fenetres
-        const char* names[numSizes] = { "60 %", "75 %", "100 %" };
-        const int def = WigaWindowSize::defaultIndex (JucePlugin_Name, numSizes);
-        PopupMenu defSizes;
-        for (int i = 0; i < numSizes; ++i)
-        {
-            sizes.addItem (1 + i, String (names[i]) + (i == def ? "  (default)" : ""), true, std::abs (getHeight() - sizeHeight (i)) <= 2);
-            defSizes.addItem (20 + i, names[i], true, i == def);
-        }
-        sizes.addSeparator();
-        sizes.addSubMenu ("Default size (new windows)", defSizes);
-        menu.addSubMenu ("Plugin size", sizes);
-    }
-    menu.addSeparator();
-
+    addHeader (menu, menuLnf.f, icoPedal, accent, "Screamer", "Overdrive  v" + String (JucePlugin_VersionString));
     PopupMenu factory;
     for (int i = 0; i < ScreamerAudioProcessor::getNumFactoryPresets(); ++i)
         factory.addItem (100 + i, String (i + 1) + ". " + ScreamerAudioProcessor::getFactoryPreset (i).name, true, proc.currentPreset.load() == i);
@@ -626,40 +632,51 @@ void ScreamerAudioProcessorEditor::showContextMenu (int learnIdx)
     const char* gateHelp[4] = { "Off (default, like the original pedal)", "Light", "Medium", "Strong (noisy pickups / hum)" };
     for (int i = 0; i < 4; ++i) gate.addItem (50 + i, gateHelp[i], true, gNow == i);
     menu.addSubMenu ("Noise gate", gate);
-
-    PopupMenu settings;
-    settings.addItem (41, "MIDI footswitch latching (127 = on / 0 = off)", true, proc.rawAt (ScreamerAudioProcessor::rMidiFsMode) < 0.5f);
-    settings.addItem (42, "MIDI footswitch momentary (toggle each press)", true, proc.rawAt (ScreamerAudioProcessor::rMidiFsMode) > 0.5f);
-    menu.addSubMenu ("Settings", settings);
+    menu.addSeparator();
 
     PopupMenu midi;
+    midi.addSectionHeader ("MIDI Learn");
     for (int i = 0; i < ScreamerAudioProcessor::numLearn; ++i)
-        midi.addItem (1000 + i, "Learn: " + String (ScreamerAudioProcessor::learnDef (i).name) + " (" + ccText (i) + ")", true, lt == i);
+        midi.addItem (1000 + i, "Learn: " + String (ScreamerAudioProcessor::learnDef (i).name) + "  (" + ccText (i) + ")", true, lt == i);
     midi.addSeparator();
-    if (lt >= 0) midi.addItem (1200, "Cancel MIDI learn");
+    midi.addItem (1200, "Cancel MIDI learn", lt >= 0);
     midi.addItem (1201, "Clear all MIDI assignments");
     midi.addSeparator();
-    midi.addItem (910, "CC n+32 = fine (14-bit) for knobs on CC 0-31", false);
-    midi.addItem (911, "Program Change 1-" + String (ScreamerAudioProcessor::getNumFactoryPresets()) + "  Factory presets", false);
+    NineHandsWindow::addMidiFootswitchMode (midi, proc.rawAt (ScreamerAudioProcessor::rMidiFsMode) < 0.5f);
+    midi.addSeparator();
+    NineHandsWindow::addProgramChangeInfo (midi);
     menu.addSubMenu ("MIDI", midi);
     menu.addSeparator();
-    menu.addItem (999, "Screamer overdrive v" + String (JucePlugin_VersionString) + " - NINE HANDS | DSP", false);
 
-    menu.setLookAndFeel (&menuLnf);
+    const char* names[numSizes] = { "60 %", "75 %", "100 %" };
+    const int heights[numSizes] = { sizeHeight (0), sizeHeight (1), sizeHeight (2) };
+    menu.addSubMenu ("Plugin size", NineHandsWindow::sizeMenu (JucePlugin_Name, numSizes, names, heights, getHeight()));
+    menu.addSubMenu ("Glow intensity", NineHandsWindow::glowMenu (glowPc));
+    return menu;
+}
+
+void ScreamerAudioProcessorEditor::showContextMenu (int learnIdx)
+{
+    auto menu = buildContextMenu (learnIdx);
     menu.showMenuAsync (PopupMenu::Options().withMousePosition(),       // menu clic droit : toujours la ou l'on clique
         [safe = Component::SafePointer<ScreamerAudioProcessorEditor> (this)] (int r)
         {
             if (safe == nullptr || r == 0) return;
             auto& ed = *safe;
             auto& pr = ed.proc;
-            if      (r >= 1 && r < 1 + numSizes) ed.setScaledHeight (ed.sizeHeight (r - 1));
-            else if (r >= 20 && r < 20 + numSizes)
+            int inst = pr.uiSizeIdx.load();
+            const int sz = NineHandsWindow::handleSize (r, JucePlugin_Name, numSizes, inst);
+            if (sz >= 0) { pr.uiSizeIdx = inst; ed.setScaledHeight (ed.sizeHeight (sz)); return; }
+            if (const int pc = NineHandsWindow::handleGlow (r, JucePlugin_Name))
             {
-                WigaWindowSize::setDefaultIndex (JucePlugin_Name, r - 20);   // toutes les nouvelles fenetres de ce plugin
-                ed.setScaledHeight (ed.sizeHeight (r - 20));                // et cette fenetre tout de suite
+                ed.setGlowPercent (pc);
+                ed.learnLine = "Glow  " + String (pc) + " %";
+                ed.learnLineUntil = Time::getMillisecondCounterHiRes() + 1500.0;
+                ed.statusUntil = jmax (ed.statusUntil, ed.learnLineUntil);
+                return;
             }
-            else if (r == 41) pr.setParamValue ("midiFsMode", 0.0f);
-            else if (r == 42) pr.setParamValue ("midiFsMode", 1.0f);
+            if      (r == NineHandsWindow::idLatch)     pr.setParamValue ("midiFsMode", 0.0f);
+            else if (r == NineHandsWindow::idMomentary) pr.setParamValue ("midiFsMode", 1.0f);
             else if (r >= 50 && r <= 53) pr.setParamValue ("gate", (float) (r - 50));
             else if (r >= 100 && r < 200) pr.applyFactoryPreset (r - 100);
             else if (r > 200 && r < 300)  pr.loadUserPreset (r - 200);
